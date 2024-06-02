@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:dio/dio.dart';
+import 'package:dio/src/response.dart' as dio;
+import 'package:get/get.dart';
 
 import '../http/DioClient.dart';
 
@@ -9,7 +10,7 @@ HttpService httpService = HttpService();
 class LunisolarCalendar {
   static fetch(int Y, int M, int D) async {
     // 发起 GET 请求
-    Response response = await httpService.get('/huangli/date?appkey=2c99829512138cc0&year=$Y&month=$M&day=$D');
+    dio.Response response = await httpService.get('/huangli/date?appkey=2c99829512138cc0&year=$Y&month=$M&day=$D');
 
     if (response.statusCode == 200) {
       var jsonData = json.encode(response.data);
@@ -299,3 +300,5 @@ class Result {
     return data;
   }
 }
+
+final person = Rx<LunisolarCalendarModel>(LunisolarCalendarModel());
