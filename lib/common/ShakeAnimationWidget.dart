@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lock_screen_clock/util/ScreenUtilHelper.dart';
 
 class ExpandedComponent extends StatelessWidget {
   // final Function onLongPress;
@@ -14,7 +15,8 @@ class ExpandedComponent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: 1,
-      child: InkWell(
+      child: Container(
+        padding: EdgeInsets.only(left: ScreenUtilHelper.setWidth(20)),
         // onLongPress: () => onLongPress(),
         child: PageView(
           scrollDirection: Axis.vertical,

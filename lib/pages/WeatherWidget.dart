@@ -1,7 +1,9 @@
+import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_shake_animated/flutter_shake_animated.dart';
 import 'package:get/get.dart';
 import 'package:lock_screen_clock/common/ShakeAnimationWidget.dart';
+import 'package:lock_screen_clock/mixins/date_helper_mixin.dart';
 import 'package:lock_screen_clock/model/LunisolarCalendar.dart';
 import 'package:lock_screen_clock/model/Weather.dart';
 import 'package:lock_screen_clock/util/ScreenUtilHelper.dart';
@@ -26,34 +28,39 @@ class WeatherWidget extends StatefulWidget {
 }
 
 class _WeatherWidgetState extends State<WeatherWidget>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, DateHelperMixin {
   RxBool isShowMask = true.obs;
-  late AnimationController _controller;
   final selectedExpanded = RxnInt();
-  late PageController _pageController;
+
+  final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin();
+  late List<Calendar> _calendars;
+  Calendar? _selectedCalendar;
+  List<Event>? _events;
+
+  final todoList = [];
 
   double _viewportFraction = 1;
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    _controller = AnimationController(
-      duration: Duration(milliseconds: 1000),
-      vsync: this,
-    );
 
-    _pageController = PageController(viewportFraction: _viewportFraction);
+    ///请求日历权限
+    _retrieveCalendars();
+
+    _retrieveEvents();
   }
 
   @override
   void dispose() {
     // TODO: implement dispose
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    Map<String, dynamic> dateInfo = getCurrentDateInfo();
     return Obx(() => Center(
           child: Row(
             children: [
@@ -105,7 +112,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
                                 ),
                                 Transform(
                                   transform: Matrix4.diagonal3Values(
-                                      1.3, 1.0, 1.0), // 调整拉伸比例
+                                      1.2, 1.0, 1.0), // 调整拉伸比例
                                   child: Text(
                                     DateTime.now()
                                         .day
@@ -136,10 +143,12 @@ class _WeatherWidgetState extends State<WeatherWidget>
                             ),
                           ),
                           Column(
-                            children: getWeekday().split('').map((char) {
+                            children: dateInfo['weekday']
+                                .split('')
+                                .map<Widget>((char) {
                               return Container(
                                 padding: EdgeInsets.only(
-                                    left: ScreenUtilHelper.setWidth(20)),
+                                    left: ScreenUtilHelper.setWidth(15)),
                                 child: Text(
                                   char,
                                   style: TextStyle(
@@ -153,101 +162,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
                         ],
                       )
                     ],
-                  ),Column(
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.only(
-                            top: ScreenUtilHelper.setHeight(20.0)),
-                        child: Text(
-                          getFormattedDate(),
-                          style: TextStyle(
-                              color: widget.color,
-                              fontSize: ScreenUtilHelper.setSp(40),
-                              fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(
-                                top: ScreenUtilHelper.setHeight(10)),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisSize: MainAxisSize.max,
-                                  children: [
-                                    Text(
-                                        widget.lunisolarCalendarModel.result!
-                                                .nongli ??
-                                            "",
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                            color: widget.color,
-                                            fontSize:
-                                                ScreenUtilHelper.setSp(15),
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 2)),
-                                  ],
-                                ),
-                                SizedBox(
-                                  height: ScreenUtilHelper.setHeight(10),
-                                ),
-                                Transform(
-                                  transform: Matrix4.diagonal3Values(
-                                      1.3, 1.0, 1.0), // 调整拉伸比例
-                                  child: Text(
-                                    DateTime.now()
-                                        .day
-                                        .toString()
-                                        .padLeft(2, '0'),
-                                    style: TextStyle(
-                                      color: widget.color,
-                                      fontSize: ScreenUtilHelper.setSp(205),
-                                      fontWeight: FontWeight.w700,
-                                      height: 0.8,
-                                    ),
-                                    textAlign: TextAlign.start,
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: ScreenUtilHelper.setHeight(10),
-                                ),
-                                _goodDay(
-                                    widget.lunisolarCalendarModel.result!.yi ??
-                                        []),
-                                SizedBox(
-                                  height: ScreenUtilHelper.setHeight(10),
-                                ),
-                                _noGoodDay(
-                                    widget.lunisolarCalendarModel.result!.ji ??
-                                        []),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            children: getWeekday().split('').map((char) {
-                              return Container(
-                                padding: EdgeInsets.only(
-                                    left: ScreenUtilHelper.setWidth(20)),
-                                child: Text(
-                                  char,
-                                  style: TextStyle(
-                                      color: widget.color,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: ScreenUtilHelper.setSp(80)),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      )
-                    ],
-                  )
+                  ),
                 ],
               ),
               ExpandedComponent(
@@ -262,8 +177,8 @@ class _WeatherWidgetState extends State<WeatherWidget>
                       autoPlay: isShowMask.value ? false : true,
                       child: Container(
                         height: double.infinity,
-                        padding:
-                            EdgeInsets.only(left: ScreenUtilHelper.setWidth(2)),
+                        padding: EdgeInsets.only(
+                            left: ScreenUtilHelper.setWidth(20)),
                         decoration: BoxDecoration(
                             color: Colors.black,
                             borderRadius: BorderRadius.circular(20)),
@@ -297,7 +212,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
                               "${widget.weatherModel.result!.temp}℃",
                               style: TextStyle(
                                   color: widget.color,
-                                  fontSize: ScreenUtilHelper.setSp(130),
+                                  fontSize: ScreenUtilHelper.setSp(120),
                                   fontWeight: FontWeight.w600),
                             ),
                             Row(
@@ -321,7 +236,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
                               ],
                             ),
                             Padding(
-                              padding: const EdgeInsets.only(top: 10.0),
+                              padding: const EdgeInsets.only(top: 20.0),
                               child: Text(
                                 "${widget.weatherModel.result!.templow}℃ / ${widget.weatherModel.result!.temphigh}℃",
                                 style: TextStyle(
@@ -343,6 +258,8 @@ class _WeatherWidgetState extends State<WeatherWidget>
                       shakeConstant: ShakeRotateConstant1(),
                       duration: Duration(seconds: 5),
                       autoPlay: isShowMask.value ? false : true,
+
+                      ///如果isShowMask就打开抖动，提醒用户可以编辑组件内容
                       child: Container(
                         padding:
                             EdgeInsets.only(left: ScreenUtilHelper.setWidth(2)),
@@ -356,9 +273,11 @@ class _WeatherWidgetState extends State<WeatherWidget>
                               padding: EdgeInsets.only(
                                   top: ScreenUtilHelper.setHeight(25)),
                               child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    widget.weatherModel.result!.city ?? "",
+                                    "今天",
                                     style: TextStyle(
                                         color: widget.color,
                                         fontSize: ScreenUtilHelper.setSp(35),
@@ -367,51 +286,22 @@ class _WeatherWidgetState extends State<WeatherWidget>
                                   SizedBox(
                                     width: ScreenUtilHelper.setWidth(2),
                                   ),
-                                  Icon(
-                                    IconFontIcons.icon_daohang,
-                                    color: widget.color,
-                                    size: ScreenUtilHelper.setSp(30),
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                        right: ScreenUtilHelper.setWidth(20)),
+                                    child: Text(
+                                      todoList.length.toString(),
+                                      style: TextStyle(
+                                        color: widget.color,
+                                        fontSize: ScreenUtilHelper.setSp(35),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   )
                                 ],
                               ),
                             ),
-                            Text(
-                              "${widget.weatherModel.result!.temp}℃",
-                              style: TextStyle(
-                                  color: widget.color,
-                                  fontSize: ScreenUtilHelper.setSp(66),
-                                  fontWeight: FontWeight.w600),
-                            ),
-                            Row(
-                              children: [
-                                Icon(
-                                  WeatherIcon(
-                                      widget.weatherModel.result!.weather ??
-                                          ""),
-                                  color: widget.color,
-                                  size: ScreenUtilHelper.setSp(20),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 10.0),
-                                  child: Text(
-                                      widget.weatherModel.result?.weather ?? "",
-                                      style: TextStyle(
-                                          fontSize: ScreenUtilHelper.setSp(20),
-                                          color: widget.color,
-                                          fontWeight: FontWeight.w600)),
-                                ),
-                              ],
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 10.0),
-                              child: Text(
-                                "${widget.weatherModel.result!.templow}℃ / ${widget.weatherModel.result!.temphigh}℃",
-                                style: TextStyle(
-                                    color: widget.color,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: ScreenUtilHelper.setSp(20)),
-                              ),
-                            )
+                            _buildTodoList(),
                           ],
                         ),
                       ),
@@ -422,23 +312,6 @@ class _WeatherWidgetState extends State<WeatherWidget>
             ],
           ),
         ));
-  }
-
-  String getWeekday() {
-    // 获取当前日期
-    DateTime now = DateTime.now();
-
-    // weekday的值从1（星期一）到7（星期日）
-    int weekdayIndex = now.weekday;
-
-    // 创建一个列表来存储星期的名称
-    List<String> weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-
-    // 根据weekdayIndex获取对应的星期名称
-    String weekday =
-        weekdays[weekdayIndex - 1]; // 因为weekdayIndex从1开始，而数组索引从0开始，所以需要减1
-
-    return weekday;
   }
 
   String getFormattedDate() {
@@ -500,5 +373,69 @@ class _WeatherWidgetState extends State<WeatherWidget>
       selectedExpanded.value = index;
       isShowMask.value = true;
     }
+  }
+
+  _buildTodoList() {
+    if (todoList.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.only(top: ScreenUtilHelper.setHeight(20)),
+        child: Text(
+          "没有提醒事项",
+          style: TextStyle(
+              color: Color.fromARGB(131, 255, 255, 255),
+              fontSize: ScreenUtilHelper.setSp(35)),
+        ),
+      );
+    }
+
+    return Container(
+      child: Text("DATA"),
+    );
+  }
+
+  ///请求权限并获取日历
+  Future<void> _retrieveCalendars() async {
+    try {
+      var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
+      if (permissionsGranted.isSuccess &&
+          permissionsGranted.data != null &&
+          !permissionsGranted.data!) {
+        permissionsGranted = await _deviceCalendarPlugin.requestPermissions();
+        if (!permissionsGranted.isSuccess ||
+            permissionsGranted.data == null ||
+            !permissionsGranted.data!) {
+          return;
+        }
+      }
+
+      if (permissionsGranted.isSuccess &&
+          permissionsGranted.data != null &&
+          permissionsGranted.data!) {
+        final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
+        setState(() {
+          _calendars = calendarsResult.data as List<Calendar>;
+
+          print("_calendars---${_calendars}");
+        });
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  Future<void> _retrieveEvents() async {
+    if (_selectedCalendar == null) return;
+
+    final startDate = DateTime.now().subtract(Duration(days: 30));
+    final endDate = DateTime.now().add(Duration(days: 30));
+    final retrieveEventsParams =
+        RetrieveEventsParams(startDate: startDate, endDate: endDate);
+    final eventsResult = await _deviceCalendarPlugin.retrieveEvents(
+        _selectedCalendar?.id, retrieveEventsParams);
+    setState(() {
+      _events = eventsResult?.data;
+    });
+
+    print("_events--${_events}");
   }
 }
