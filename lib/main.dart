@@ -639,7 +639,8 @@ class _MyHomePageState extends State<MyHomePage>
     if (value) {
       if (Platform.isAndroid) {
         // 检查通知权限
-        final hasPermission = await NotificationService.instance.checkNotificationPermission();
+        final hasPermission =
+            await NotificationService.instance.checkNotificationPermission();
         if (hasPermission) {
           // 有权限，开启通知监听
           isNotificationReminder.value = true;

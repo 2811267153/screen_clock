@@ -172,8 +172,8 @@ class _WeatherWidgetState extends State<WeatherWidget>
                 children: [
                   Container(
                     height: double.infinity,
-                    padding: EdgeInsets.only(
-                        left: ScreenUtilHelper.setWidth(20)),
+                    padding:
+                        EdgeInsets.only(left: ScreenUtilHelper.setWidth(20)),
                     decoration: BoxDecoration(
                         color: Colors.black,
                         borderRadius: BorderRadius.circular(20)),
@@ -214,8 +214,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
                           children: [
                             Icon(
                               WeatherIcon(
-                                  widget.weatherModel.result?.weather ??
-                                      ""),
+                                  widget.weatherModel.result?.weather ?? ""),
                               color: widget.color,
                               size: ScreenUtilHelper.setSp(40),
                             ),
@@ -256,8 +255,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
                           padding: EdgeInsets.only(
                               top: ScreenUtilHelper.setHeight(25)),
                           child: Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
                                 "今天",
@@ -350,6 +348,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
       children: textWidgets,
     );
   }
+
   _buildTodoList() {
     // print("controller${controller.events[0].title}");
     if (controller.events.isEmpty) {
@@ -376,8 +375,10 @@ class _WeatherWidgetState extends State<WeatherWidget>
                   children: [
                     Container(
                       height: ScreenUtilHelper.setWidth(90),
-                      margin:
-                          EdgeInsets.only(top: ScreenUtilHelper.setWidth(20),left: ScreenUtilHelper.setWidth(20),),
+                      margin: EdgeInsets.only(
+                        top: ScreenUtilHelper.setWidth(20),
+                        left: ScreenUtilHelper.setWidth(20),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -409,14 +410,14 @@ class _WeatherWidgetState extends State<WeatherWidget>
                     ),
                     Positioned(
                         child: Container(
-                          margin:
+                      margin:
                           EdgeInsets.only(top: ScreenUtilHelper.setWidth(20)),
                       width: ScreenUtilHelper.setWidth(10),
                       height: ScreenUtilHelper.setWidth(90),
                       decoration: BoxDecoration(
-                        color: widget.color,
-                        borderRadius: BorderRadius.circular(ScreenUtilHelper.setWidth(20))
-                      ),
+                          color: widget.color,
+                          borderRadius: BorderRadius.circular(
+                              ScreenUtilHelper.setWidth(20))),
                     ))
                   ],
                 ),
