@@ -2,6 +2,7 @@
 import 'package:card_swiper/card_swiper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screen_clock/pages/some_page.dart';
 import 'package:get/get.dart';
 
 import '../controller/HomePageController.dart';
@@ -56,8 +57,9 @@ class _SwiperContainer extends State<SwiperContainer> with WidgetsBindingObserve
   @override
   Widget build(BuildContext context) {
 
-    late List<Widget> itemWidget = <Widget>[ClockWidget(), WeatherWidget(weatherModel: homePageController.weatherModel.value, lunisolarCalendarModel: homePageController.lunisolarCalendarModel.value, color: Color(0xFFFF4650),)]; // 初始化itemWidget
-
+    late List<Widget> itemWidget = <Widget>[
+      ClockWidget(),
+      WeatherWidget(weatherModel: homePageController.weatherModel.value, lunisolarCalendarModel: homePageController.lunisolarCalendarModel.value, color: Color(0xFFFF4650),)]; // 初始化itemWidget
 
     return Scaffold(
       body: Container(
@@ -66,7 +68,7 @@ class _SwiperContainer extends State<SwiperContainer> with WidgetsBindingObserve
         child: Hero(
           tag: "swiper_container",
           child: Swiper(
-            autoplay: true,
+            autoplay: false,
             duration: 500,
             autoplayDelay: 120000,
             itemBuilder: (BuildContext context, int index) {

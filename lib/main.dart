@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screen_clock/services/todo_list.dart';
+import 'package:flutter_screen_clock/util/nativeToast.dart';
 
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -12,8 +13,7 @@ import 'package:intl/intl.dart' as intl;
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:one_clock/one_clock.dart';
 import 'package:progressive_time_picker/progressive_time_picker.dart';
-import 'package:slide_popup_dialog_null_safety/slide_popup_dialog.dart'
-as slideDialog;
+
 import 'package:switcher_xlive/switcher_xlive.dart';
 import 'package:vibration/vibration.dart';
 
@@ -23,11 +23,16 @@ import 'mixins/date_helper_mixin.dart';
 import 'model/LunisolarCalendar.dart';
 import 'model/Weather.dart';
 import 'pages/SwiperWidget.dart';
+import 'services/notification_service.dart';
 import 'util/ScreenUtilHelper.dart';
 import 'util/util.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  Get.put(NotificationService());
+  Get.put(ToDoListService());
+
   if (Platform.isAndroid) {
     SystemUiOverlayStyle style = const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -42,6 +47,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return OrientationBuilder(builder: (context, orientation) {
@@ -59,11 +65,11 @@ class MyApp extends StatelessWidget {
           textTheme: const TextTheme(
             bodyLarge: TextStyle(fontSize: 16.0, fontWeight: FontWeight.normal),
             bodyMedium:
-            TextStyle(fontSize: 14.0, fontWeight: FontWeight.normal),
+                TextStyle(fontSize: 14.0, fontWeight: FontWeight.normal),
             displayLarge:
-            TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
+                TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
             displayMedium:
-            TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold),
+                TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold),
           ),
         ),
         getPages: [
@@ -85,6 +91,7 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
@@ -96,7 +103,7 @@ class _MyHomePageState extends State<MyHomePage>
   RxBool isWeatherAlarmEnabled = false.obs;
 
   final MyHomePageController homePageController =
-  Get.put(MyHomePageController());
+      Get.put(MyHomePageController());
 
   late WeatherModel weatherModel;
   late LunisolarCalendarModel lunisolarCalendarModel;
@@ -149,18 +156,25 @@ class _MyHomePageState extends State<MyHomePage>
                     height: ScreenUtilHelper.setHeight(20),
                   ),
                   Obx(() => _mainListWidget(
-                      "睡眠",
-                      "开启后改时间段内，屏幕亮度将会有所降低，在结束时恢复，并自动开启天气闹钟。",
+                      "睡眠闹钟",
+                      "开启后改时间段内，屏幕亮度将会有所降低，在结束时恢复，并自动开启天����闹钟。",
                       isWeatherAlarmEnabled.value,
-                          (value) => _setWeatherAlarmEnabled(value!),
-                          (value) => _showDialog(true),
+                      (value) => _setWeatherAlarmEnabled(value!),
+                      (value) => _showDialog(true),
                       true)),
                   Obx(() => _mainListWidget(
                       "每日一言",
-                      "开启后将在全屏显示时间时，沉浸式显示通知内容。",
+                      "每日更换一句名言,生活很累,要学会给自己打打鸡血!😒",
                       isAWordDay.value,
-                          (value) => {_setAWordDay(value!)},
-                          (value) => _showDialog(false),
+                      (value) => {_setAWordDay(value!)},
+                      (value) => _showDialog(false),
+                      false)),
+                  Obx(() => _mainListWidget(
+                      "沉浸式通知",
+                      "开启后将在全屏显示时间时，沉浸式显示通知内容。",
+                      isNotificationReminder.value,
+                      (value) => _setNotificationReminder(value!),
+                      (value) => _showDialog(false),
                       false)),
                 ],
               ),
@@ -216,7 +230,7 @@ class _MyHomePageState extends State<MyHomePage>
                 height: ScreenUtilHelper.setHeight(260),
                 width: ScreenUtilHelper.setWidth(260),
                 child: Obx(
-                      () => TimePicker(
+                  () => TimePicker(
                       initTime: inBedTime.value,
                       endTime: outBedTime.value,
                       height: ScreenUtilHelper.setHeight(260),
@@ -305,18 +319,18 @@ class _MyHomePageState extends State<MyHomePage>
                 ],
               ),
               child: Obx(() => Text(
-                _isSleepGoal.value ? "高于睡眠目标(>=8) 😇" : '低于睡眠目标(<=8) 😴',
-                style: TextStyle(
-                  color: _isSleepGoal.value
-                      ? const Color(0xFF3CDAF7)
-                      : const Color(0xFFFF5252),
-                  fontSize: ScreenUtilHelper.setSp(20),
-                  fontWeight: FontWeight.bold,
-                ),
-              )),
+                    _isSleepGoal.value ? "高于睡眠目标(>=8) 😇" : '低于睡眠目标(<=8) 😴',
+                    style: TextStyle(
+                      color: _isSleepGoal.value
+                          ? const Color(0xFF3CDAF7)
+                          : const Color(0xFFFF5252),
+                      fontSize: ScreenUtilHelper.setSp(20),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )),
             ),
             Obx(
-                  () => Row(
+              () => Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _timeWidget(
@@ -362,7 +376,7 @@ class _MyHomePageState extends State<MyHomePage>
           decoration: BoxDecoration(
               color: Colors.white,
               borderRadius:
-              BorderRadius.circular(ScreenUtilHelper.setHeight(20))),
+                  BorderRadius.circular(ScreenUtilHelper.setHeight(20))),
           child: ListTile(
             title: Text(title,
                 style: TextStyle(
@@ -404,88 +418,87 @@ class _MyHomePageState extends State<MyHomePage>
   _mainTitleClock(BuildContext context) {
     Map<String, dynamic> dateInfo = getCurrentDateInfo();
     return Column(
-        children: [
-    Center(
-    child: Stack(
-    alignment: Alignment.center,
-        children: [
-    Container(
-    width: ScreenUtilHelper.setWidth(300),
-    height: ScreenUtilHelper.setHeight(300),
-    alignment: Alignment.center,
-    decoration: const BoxDecoration(
-    color: Colors.white,
-    boxShadow: [
-    BoxShadow(
-    color: Color(0xFFF2F2F2),
-    offset: Offset(4, 4),
-    blurRadius: 10,
-    spreadRadius: 1,
-    ),
-    ],
-    shape: BoxShape.circle),
-    ),
-    Container(
-    alignment: Alignment.center,
-    width: ScreenUtilHelper.setWidth(280),
-    height: ScreenUtilHelper.setHeight(280),
-    decoration: const BoxDecoration(
-    color: Colors.white,
-    boxShadow: [
-    BoxShadow(
-    color: Colors.transparent,
-    offset: Offset(10, 10),
-    blurRadius: 10,
-    spreadRadius: 1,
-    ),
-    ],
-    shape: BoxShape.circle,
-    ),
-    child: AnalogClock(
-    isLive: true,
-    hourHandColor: Colors.black,
-    minuteHandColor: Colors.black,
-    showSecondHand: true,
-    numberColor: Colors.black87,
-    showNumbers: true,
-    showAllNumbers: false,
-    textScaleFactor: 1.4,
-    showTicks: false,
-    showDigitalClock: false,
-    datetime: dateInfo["now"],
-    key: const  GlobalObjectKey(3),
-    ),
-    ),
-        ],
-    ),
-    ),
-          SizedBox(
-            height: ScreenUtilHelper.setHeight(10),
+      children: [
+        Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: ScreenUtilHelper.setWidth(300),
+                height: ScreenUtilHelper.setHeight(300),
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFFF2F2F2),
+                        offset: Offset(4, 4),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                    shape: BoxShape.circle),
+              ),
+              Container(
+                alignment: Alignment.center,
+                width: ScreenUtilHelper.setWidth(280),
+                height: ScreenUtilHelper.setHeight(280),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.transparent,
+                      offset: Offset(10, 10),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                  shape: BoxShape.circle,
+                ),
+                child: AnalogClock(
+                  isLive: true,
+                  hourHandColor: Colors.black,
+                  minuteHandColor: Colors.black,
+                  showSecondHand: true,
+                  numberColor: Colors.black87,
+                  showNumbers: true,
+                  showAllNumbers: false,
+                  textScaleFactor: 1.4,
+                  showTicks: false,
+                  showDigitalClock: false,
+                  datetime: dateInfo["now"],
+                  key: const GlobalObjectKey(3),
+                ),
+              ),
+            ],
           ),
-          Text(
-            "${dateInfo['year']}-${dateInfo["month"]}-${dateInfo["day"]}  ${dateInfo["weekday"]}",
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-          )
-        ],
+        ),
+        SizedBox(
+          height: ScreenUtilHelper.setHeight(10),
+        ),
+        Text(
+          "${dateInfo['year']}-${dateInfo["month"]}-${dateInfo["day"]}  ${dateInfo["weekday"]}",
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+        )
+      ],
     );
   }
 
-
   void _updateLabels(
-      PickedTime init,
-      PickedTime end,
-      isDisableRange,
-      ) async {
-    //获取设备是否能震动
+    PickedTime init,
+    PickedTime end,
+    isDisableRange,
+  ) async {
+    //获取���备是否能震动
     bool? hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator != null && hasVibrator) {
       Vibration.vibrate(duration: 10, amplitude: 120);
     }
     final baseDate = DateTime.now();
     final startTime =
-    DateTime(baseDate.year, baseDate.month, baseDate.day, init.h, init.m);
+        DateTime(baseDate.year, baseDate.month, baseDate.day, init.h, init.m);
     DateTime endTime =
-    DateTime(baseDate.year, baseDate.month, baseDate.day, end.h, end.m);
+        DateTime(baseDate.year, baseDate.month, baseDate.day, end.h, end.m);
 
     if (endTime.isBefore(startTime)) {
       endTime = endTime.add(const Duration(days: 1));
@@ -573,10 +586,10 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   Widget? clickableButtonMethod(
-      BuildContext context,
-      String text,
-      VoidCallback onTap,
-      ) {
+    BuildContext context,
+    String text,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       splashColor: Colors.transparent, // 禁用波纹颜色»»»»»»
       highlightColor: Colors.transparent, // 禁用高亮颜色
@@ -620,33 +633,54 @@ class _MyHomePageState extends State<MyHomePage>
     SpUtils.setBool("AWordDay", value);
   }
 
+  /// 设置通知提醒开关
+  /// @param value 是否开启通知提醒
+  _setNotificationReminder(bool value) async {
+    if (value) {
+      if (Platform.isAndroid) {
+        // 检查通知权限
+        final hasPermission = await NotificationService.instance.checkNotificationPermission();
+        if (hasPermission) {
+          // 有权限，开启通知监听
+          isNotificationReminder.value = true;
+          SpUtils.setBool("isNotificationReminder", true);
+          NotificationService.instance.startListening();
+        } else {
+          // 无权限，保持关闭状态
+          isNotificationReminder.value = false;
+          SpUtils.setBool("isNotificationReminder", false);
+          NativeToast.showToast("未获取通知权限，请重新尝试开启");
+        }
+      }
+    } else {
+      // 关闭通知监听
+      isNotificationReminder.value = false;
+      SpUtils.setBool("isNotificationReminder", false);
+      NotificationService.instance.stopListening();
+    }
+  }
+
+  /// 初始化应用数据
   void initAppData() {
+    // 从本地存储加载设置状态
     isNotificationReminder.value =
         SpUtils.getBool("isNotificationReminder") ?? false;
     isWeatherAlarmEnabled.value =
         SpUtils.getBool("isWeatherAlarmEnabled") ?? false;
     isAWordDay.value = SpUtils.getBool("AWordDay") ?? false;
 
-    // if (isNotificationReminder.value) {
-    //   if (Platform.isAndroid) {
-    //     ///监听系统通知事件
-    //     initPlatformState();
-    //
-    //     print("开始监听${isNotificationReminder.value}");
-    //
-    //     ///开始监听通知栏列表
-    //     startListening();
-    //   }
-    // }
+    // 如果通知提醒已开启，检查权限
+    if (isNotificationReminder.value && Platform.isAndroid) {
+      NotificationService.instance.checkNotificationPermission();
+    }
 
+    // 如果天气闹钟已开启，初始化相关数据
     if (isWeatherAlarmEnabled.value) {
       fetchWeather();
       outBedTimeTimestampInSeconds.value = SpUtils.getInt("_outBedTime") ?? 0;
       inBedTimeTimestampInSeconds.value = SpUtils.getInt("inBedTime") ?? 0;
       _startTimer();
     }
-
-    if (isAWordDay.value) {}
   }
 
   void _startTimer() {
@@ -672,4 +706,3 @@ class _MyHomePageState extends State<MyHomePage>
     SpUtils.setBool("isWeatherAlarmEnabled", value);
   }
 }
-
