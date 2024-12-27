@@ -8,7 +8,6 @@ IconData WeatherIcon(String weatherStatus) {
 
   // 转小写避免大小写问题
   final normalizedWeatherStatus = weatherStatus.toLowerCase();
-  print(weatherStatus);
 
   final weatherIconMap = {
     '晴'.toLowerCase(): isNight ? IconFontIcons.icon_n_qintian : IconFontIcons.icon_qintian,
@@ -37,3 +36,41 @@ IconData WeatherIcon(String weatherStatus) {
 
   return weatherIconMap[normalizedWeatherStatus] ?? IconFontIcons.icon_weizhi;
 }
+
+IconData DayNumberIcon(String num) {
+// 第二个Map - D系列（shuzi）
+  final Map<String, IconData> dIcons = {
+    '0': const IconData(0xe60d, fontFamily: "IconFontIcons"),
+    '1': const IconData(0xe60e, fontFamily: "IconFontIcons"),
+    '2': const IconData(0xe60f, fontFamily: "IconFontIcons"),
+    '3': const IconData(0xe610, fontFamily: "IconFontIcons"),
+    '4': const IconData(0xe611, fontFamily: "IconFontIcons"),
+    '5': const IconData(0xe612, fontFamily: "IconFontIcons"),
+    '6': const IconData(0xe613, fontFamily: "IconFontIcons"),
+    '7': const IconData(0xe614, fontFamily: "IconFontIcons"),
+    '8': const IconData(0xe615, fontFamily: "IconFontIcons"),
+    '9': const IconData(0xe616, fontFamily: "IconFontIcons"),
+  };
+
+  return dIcons['D$num'] ?? dIcons['D0']!;
+}
+
+IconData TimeNumberIcon(String num) {
+// 第二个Map - D系列（shuzi）
+  final Map<String, IconData> dIcons = {
+    '0': const IconData(0xe637, fontFamily: "IconFontIcons"),
+    '1': const IconData(0xe638, fontFamily: "IconFontIcons"),
+    '2': const IconData(0xe639, fontFamily: "IconFontIcons"),
+    '3': const IconData(0xe63a, fontFamily: "IconFontIcons"),
+    '4': const IconData(0xe62b, fontFamily: "IconFontIcons"), // 注意：原列表中没有4，我用了一个占位值
+    '5': const IconData(0xe62c, fontFamily: "IconFontIcons"),
+    '6': const IconData(0xe62d, fontFamily: "IconFontIcons"),
+    '7': const IconData(0xe62e, fontFamily: "IconFontIcons"),
+    '8': const IconData(0xe74c, fontFamily: "IconFontIcons"),
+    '9': const IconData(0xe748, fontFamily: "IconFontIcons"),
+  };
+
+  return dIcons['D$num'] ?? dIcons['D0']!;
+}
+
+

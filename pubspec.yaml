@@ -61,8 +61,8 @@ dependencies:
   flutter_shake_animated: ^0.0.5
   device_calendar: ^4.3.2
   modal_bottom_sheet: ^3.0.0
-  permission_handler: ^11.3.1
-
+#  permission_handler: ^11.3.1
+  speech_balloon: ^0.0.4
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -105,11 +105,14 @@ flutter:
     - family: IconFontIcons
       fonts:
         - asset: assets/fonts/icon/iconfont.ttf
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
+    - family: PingFang Pro
+      fonts:
+        - asset: assets/fonts/default/PingFang-Bold.ttf
+          weight: 100
+    - family: LED
+      fonts:
+        - asset: assets/fonts/default/LED.ttf
+          weight: 100
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package

@@ -98,6 +98,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage>
     with WidgetsBindingObserver, DateHelperMixin {
+  RxBool isMasterSwitchOn = false.obs;
   RxBool isNotificationReminder = false.obs;
   RxBool isAWordDay = false.obs;
   RxBool isWeatherAlarmEnabled = false.obs;
@@ -155,27 +156,7 @@ class _MyHomePageState extends State<MyHomePage>
                   SizedBox(
                     height: ScreenUtilHelper.setHeight(20),
                   ),
-                  Obx(() => _mainListWidget(
-                      "睡眠闹钟",
-                      "开启后改时间段内，屏幕亮度将会有所降低，在结束时恢复，并自动开启天����闹钟。",
-                      isWeatherAlarmEnabled.value,
-                      (value) => _setWeatherAlarmEnabled(value!),
-                      (value) => _showDialog(true),
-                      true)),
-                  Obx(() => _mainListWidget(
-                      "每日一言",
-                      "每日更换一句名言,生活很累,要学会给自己打打鸡血!😒",
-                      isAWordDay.value,
-                      (value) => {_setAWordDay(value!)},
-                      (value) => _showDialog(false),
-                      false)),
-                  Obx(() => _mainListWidget(
-                      "沉浸式通知",
-                      "开启后将在全屏显示时间时，沉浸式显示通知内容。",
-                      isNotificationReminder.value,
-                      (value) => _setNotificationReminder(value!),
-                      (value) => _showDialog(false),
-                      false)),
+                  _buildSettingsPanel(),
                 ],
               ),
             ),
@@ -489,7 +470,7 @@ class _MyHomePageState extends State<MyHomePage>
     PickedTime end,
     isDisableRange,
   ) async {
-    //获取���备是否能震动
+    //获取设备是否能震动
     bool? hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator != null && hasVibrator) {
       Vibration.vibrate(duration: 10, amplitude: 120);
@@ -634,27 +615,11 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   /// 设置通知提醒开关
-  /// @param value 是否开启通知提醒
+  /// @param value 是开启通知提醒
   _setNotificationReminder(bool value) async {
-    if (value) {
-      if (Platform.isAndroid) {
-        // 检查通知权限
-        final hasPermission =
-            await NotificationService.instance.checkNotificationPermission();
-        if (hasPermission) {
-          // 有权限，开启通知监听
-          isNotificationReminder.value = true;
-          SpUtils.setBool("isNotificationReminder", true);
-          NotificationService.instance.startListening();
-        } else {
-          // 无权限，保持关闭状态
-          isNotificationReminder.value = false;
-          SpUtils.setBool("isNotificationReminder", false);
-          NativeToast.showToast("未获取通知权限，请重新尝试开启");
-        }
-      }
+    if (value && Platform.isAndroid) {
+      await _checkAndStartNotificationService();
     } else {
-      // 关闭通知监听
       isNotificationReminder.value = false;
       SpUtils.setBool("isNotificationReminder", false);
       NotificationService.instance.stopListening();
@@ -662,25 +627,30 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   /// 初始化应用数据
-  void initAppData() {
-    // 从本地存储加载设置状态
-    isNotificationReminder.value =
-        SpUtils.getBool("isNotificationReminder") ?? false;
-    isWeatherAlarmEnabled.value =
-        SpUtils.getBool("isWeatherAlarmEnabled") ?? false;
-    isAWordDay.value = SpUtils.getBool("AWordDay") ?? false;
+  void initAppData() async {
+    // 先获取总开关状态
+    isMasterSwitchOn.value = SpUtils.getBool("isMasterSwitchOn") ?? false;
 
-    // 如果通知提醒已开启，检查权限
-    if (isNotificationReminder.value && Platform.isAndroid) {
-      NotificationService.instance.checkNotificationPermission();
-    }
+    // 只有在总开关开启时才加载和启用其他开关状态
+    if (isMasterSwitchOn.value) {
+      isNotificationReminder.value =
+          SpUtils.getBool("isNotificationReminder") ?? false;
+      isWeatherAlarmEnabled.value =
+          SpUtils.getBool("isWeatherAlarmEnabled") ?? false;
+      isAWordDay.value = SpUtils.getBool("AWordDay") ?? false;
 
-    // 如果天气闹钟已开启，初始化相关数据
-    if (isWeatherAlarmEnabled.value) {
-      fetchWeather();
-      outBedTimeTimestampInSeconds.value = SpUtils.getInt("_outBedTime") ?? 0;
-      inBedTimeTimestampInSeconds.value = SpUtils.getInt("inBedTime") ?? 0;
-      _startTimer();
+      // 如果通知提醒已开启，检查权限
+      if (isNotificationReminder.value && Platform.isAndroid) {
+        _checkAndStartNotificationService();
+      }
+
+      // 如果天气闹钟已开启，初始化相关数据
+      if (isWeatherAlarmEnabled.value) {
+        fetchWeather();
+        outBedTimeTimestampInSeconds.value = SpUtils.getInt("_outBedTime") ?? 0;
+        inBedTimeTimestampInSeconds.value = SpUtils.getInt("inBedTime") ?? 0;
+        _startTimer();
+      }
     }
   }
 
@@ -705,5 +675,363 @@ class _MyHomePageState extends State<MyHomePage>
   _setWeatherAlarmEnabled(bool value) {
     isWeatherAlarmEnabled.value = value;
     SpUtils.setBool("isWeatherAlarmEnabled", value);
+
+    if (value) {
+      fetchWeather();
+      _startTimer();
+    } else {
+      _timer?.cancel();
+    }
+  }
+
+  // 添加一个透明度包装组件
+  Widget _buildSwitch({
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required bool enabled,
+  }) {
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.5, // 禁用时降低透明度
+      child: AbsorbPointer(
+        // 禁用时阻止触摸事件
+        absorbing: !enabled,
+        child: SwitcherXlive(
+          value: value,
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  // 添加总开关控制方法
+  void _setMasterSwitch(bool value) async {
+    isMasterSwitchOn.value = value;
+    await SpUtils.setBool("isMasterSwitchOn", value);
+
+    if (!value) {
+      // 关闭总开关时，关闭所有功能
+      _setNotificationReminder(false);
+      _setWeatherAlarmEnabled(false);
+      _setAWordDay(false);
+
+      // 停止所有服务
+      NotificationService.instance.stopListening();
+      _timer?.cancel();
+    }
+  }
+
+  // 修改设置界面的构建
+  Widget _buildSettingsPanel() {
+    return Column(
+      children: [
+        // 总开关
+        Container(
+          margin: EdgeInsets.fromLTRB(
+              ScreenUtilHelper.setWidth(20),
+              ScreenUtilHelper.setHeight(10),
+              ScreenUtilHelper.setWidth(20),
+              ScreenUtilHelper.setHeight(10)),
+          // padding: EdgeInsets.fromLTRB(ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5), ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5)),
+          decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius:
+                  BorderRadius.circular(ScreenUtilHelper.setHeight(20))),
+          child: ListTile(
+            title: Text("总开关",
+                style: TextStyle(
+                    color: const Color(0xFF323031),
+                    fontSize: ScreenUtilHelper.setSp(20),
+                    fontWeight: FontWeight.bold)),
+            subtitle: Padding(
+              padding: EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
+              child: Text(
+                "", // 使用 RxBool 的值
+                style: TextStyle(fontSize: ScreenUtilHelper.setSp(14)),
+              ),
+            ),
+            trailing: Obx(() => Container(
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isMasterSwitchOn.value
+                              ? const Color.fromRGBO(71, 234, 139, 0.3)
+                              : const Color.fromRGBO(255, 70, 80, 0.3),
+                          offset: const Offset(5, 3),
+                          blurRadius: 5,
+                          spreadRadius: 0,
+                        ),
+                      ]),
+                  child: SwitcherXlive(
+                    value: isMasterSwitchOn.value,
+                    onChanged: _setMasterSwitch,
+                    activeColor: const Color(0xFF47EA8B),
+                    unActiveColor: const Color(0xFFFF4650),
+                    thumbColor: Colors.white,
+                  ),
+                )),
+          ),
+        ),
+
+        ///_setMasterSwitch
+        // 通知提醒开关
+        Obx(() => Opacity(
+              opacity: isMasterSwitchOn.value ? 1.0 : 0.5,
+              child: AbsorbPointer(
+                absorbing: !isMasterSwitchOn.value,
+                child: Container(
+                  // width: ScreenUtilHelper.setWidth(400),
+                  margin: EdgeInsets.fromLTRB(
+                      ScreenUtilHelper.setWidth(20),
+                      ScreenUtilHelper.setHeight(10),
+                      ScreenUtilHelper.setWidth(20),
+                      ScreenUtilHelper.setHeight(10)),
+                  // padding: EdgeInsets.fromLTRB(ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5), ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5)),
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                      BorderRadius.circular(ScreenUtilHelper.setHeight(20))),
+                  child: ListTile(
+                    title: Text("沉浸式通知",
+                        style: TextStyle(
+                            color: const Color(0xFF323031),
+                            fontSize: ScreenUtilHelper.setSp(20),
+                            fontWeight: FontWeight.bold)),
+                    subtitle: Padding(
+                      padding: EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
+                      child: Text(
+                        "", // 使用 RxBool 的值
+                        style: TextStyle(fontSize: ScreenUtilHelper.setSp(14)),
+                      ),
+                    ),
+                    trailing: Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isNotificationReminder.value
+                                  ? const Color.fromRGBO(71, 234, 139, 0.3)
+                                  : const Color.fromRGBO(255, 70, 80, 0.3),
+                              offset: const Offset(5, 3),
+                              blurRadius: 5,
+                              spreadRadius: 0,
+                            ),
+                          ]),
+                      child: SwitcherXlive(
+                        value: isNotificationReminder.value, // 使用 RxBool 的值
+                        onChanged: _setNotificationReminder,
+                        activeColor: const Color(0xFF47EA8B),
+                        unActiveColor: const Color(0xFFFF4650),
+                        thumbColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )),
+
+
+        // 天气闹钟开关
+        Obx(() => Opacity(
+              opacity: isMasterSwitchOn.value ? 1.0 : 0.5,
+              child: AbsorbPointer(
+                absorbing: !isMasterSwitchOn.value,
+                child: Container(
+                  // width: ScreenUtilHelper.setWidth(400),
+                  margin: EdgeInsets.fromLTRB(
+                      ScreenUtilHelper.setWidth(20),
+                      ScreenUtilHelper.setHeight(10),
+                      ScreenUtilHelper.setWidth(20),
+                      ScreenUtilHelper.setHeight(10)),
+                  // padding: EdgeInsets.fromLTRB(ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5), ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5)),
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                      BorderRadius.circular(ScreenUtilHelper.setHeight(20))),
+                  child: ListTile(
+                    title: Text("睡眠闹钟",
+                        style: TextStyle(
+                            color: const Color(0xFF323031),
+                            fontSize: ScreenUtilHelper.setSp(20),
+                            fontWeight: FontWeight.bold)),
+                    subtitle: Padding(
+                      padding: EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
+                      child: Text(
+                        "", // 使用 RxBool 的值
+                        style: TextStyle(fontSize: ScreenUtilHelper.setSp(14)),
+                      ),
+                    ),
+                    trailing: Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isWeatherAlarmEnabled.value
+                                  ? const Color.fromRGBO(71, 234, 139, 0.3)
+                                  : const Color.fromRGBO(255, 70, 80, 0.3),
+                              offset: const Offset(5, 3),
+                              blurRadius: 5,
+                              spreadRadius: 0,
+                            ),
+                          ]),
+                      child: SwitcherXlive(
+                        value: isWeatherAlarmEnabled.value, // 使用 RxBool 的值
+                        onChanged: _setWeatherAlarmEnabled,
+                        activeColor: const Color(0xFF47EA8B),
+                        unActiveColor: const Color(0xFFFF4650),
+                        thumbColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )),
+
+        ///
+        /// Row(
+        //               Row(
+        //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //                   children: [
+        //                     Text(
+        //                       '一言',
+        //                       style: TextStyle(
+        //                         color: Colors.white,
+        //                         fontSize: ScreenUtilHelper.setSp(35),
+        //                       ),
+        //                     ),
+        //                     SwitcherXlive(
+        //                       value: isAWordDay.value,
+        //                       onChanged: _setAWordDay,
+        //                     ),
+        //                   ],
+        //                 )
+
+        // 一言开关
+        Obx(() => Opacity(
+              opacity: isMasterSwitchOn.value ? 1.0 : 0.5,
+              child: AbsorbPointer(
+                absorbing: !isMasterSwitchOn.value,
+                child: Container(
+                  // width: ScreenUtilHelper.setWidth(400),
+                  margin: EdgeInsets.fromLTRB(
+                      ScreenUtilHelper.setWidth(20),
+                      ScreenUtilHelper.setHeight(10),
+                      ScreenUtilHelper.setWidth(20),
+                      ScreenUtilHelper.setHeight(10)),
+                  // padding: EdgeInsets.fromLTRB(ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5), ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5)),
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                      BorderRadius.circular(ScreenUtilHelper.setHeight(20))),
+                  child: ListTile(
+                    title: Text("每日一言",
+                        style: TextStyle(
+                            color: const Color(0xFF323031),
+                            fontSize: ScreenUtilHelper.setSp(20),
+                            fontWeight: FontWeight.bold)),
+                    subtitle: Padding(
+                      padding: EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
+                      child: Text(
+                        "", // 使用 RxBool 的值
+                        style: TextStyle(fontSize: ScreenUtilHelper.setSp(14)),
+                      ),
+                    ),
+                    trailing: Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isAWordDay.value
+                                  ? const Color.fromRGBO(71, 234, 139, 0.3)
+                                  : const Color.fromRGBO(255, 70, 80, 0.3),
+                              offset: const Offset(5, 3),
+                              blurRadius: 5,
+                              spreadRadius: 0,
+                            ),
+                          ]),
+                      child: SwitcherXlive(
+                        value: isAWordDay.value, // 使用 RxBool 的值
+                        onChanged: _setAWordDay,
+                        activeColor: const Color(0xFF47EA8B),
+                        unActiveColor: const Color(0xFFFF4650),
+                        thumbColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )),
+
+        // 如果开启了天气闹钟，显示时间选择器
+        Obx(() => Visibility(
+              visible: isWeatherAlarmEnabled.value && isMasterSwitchOn.value,
+              child: Column(
+                children: [
+                  // // 起床时间选择
+                  // TimePickerSpinner(
+                  //   is24HourMode: true,
+                  //   normalTextStyle: TextStyle(
+                  //     fontSize: ScreenUtilHelper.setSp(35),
+                  //     color: Colors.grey,
+                  //   ),
+                  //   highlightedTextStyle: TextStyle(
+                  //     fontSize: ScreenUtilHelper.setSp(35),
+                  //     color: Colors.white,
+                  //   ),
+                  //   spacing: 50,
+                  //   itemHeight: 80,
+                  //   onTimeChange: (time) {
+                  //     outBedTimeTimestampInSeconds.value =
+                  //         Utils().calculateTimestamp(Time(time.hour, time.minute));
+                  //     SpUtils.setInt("_outBedTime", outBedTimeTimestampInSeconds.value);
+                  //   },
+                  // ),
+
+                  // 就寝时间选择
+                  // TimePickerSpinner(
+                  //   is24HourMode: true,
+                  //   normalTextStyle: TextStyle(
+                  //     fontSize: ScreenUtilHelper.setSp(35),
+                  //     color: Colors.grey,
+                  //   ),
+                  //   highlightedTextStyle: TextStyle(
+                  //     fontSize: ScreenUtilHelper.setSp(35),
+                  //     color: Colors.white,
+                  //   ),
+                  //   spacing: 50,
+                  //   itemHeight: 80,
+                  //   onTimeChange: (time) {
+                  //     inBedTimeTimestampInSeconds.value =
+                  //         Utils().calculateTimestamp(Time(time.hour, time.minute));
+                  //     SpUtils.setInt("inBedTime", inBedTimeTimestampInSeconds.value);
+                  //   },
+                  // ),
+                ],
+              ),
+            )),
+      ],
+    );
+  }
+
+  // 辅助方法：检查并启动通知服务
+  Future<void> _checkAndStartNotificationService() async {
+    try {
+      final hasPermission =
+          await NotificationService.instance.checkNotificationPermission();
+      if (hasPermission) {
+        NotificationService.instance.startListening();
+        isNotificationReminder.value = true;
+        SpUtils.setBool("isNotificationReminder", true);
+      } else {
+        isNotificationReminder.value = false;
+        SpUtils.setBool("isNotificationReminder", false);
+        NativeToast.showToast("权限获取异常，请重新开启权限");
+      }
+    } catch (e) {
+      isNotificationReminder.value = false;
+      SpUtils.setBool("isNotificationReminder", false);
+      NativeToast.showToast("权限获取异常，请重新开启权限");
+      debugPrint("权限检查异常: $e");
+    }
   }
 }
