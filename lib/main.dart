@@ -131,6 +131,7 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     super.initState();
     initAppData();
+    _loadMasterSwitchState();
     WidgetsBinding.instance.addObserver(this);
 
     platform.setMethodCallHandler((call) async {
@@ -642,7 +643,8 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   /// 初始化应用数据
-  void initAppData() async {
+  Future<void> initAppData() async {
+    await SpUtils.getInstance();
     // 先从原生端获取总开关状态
     const platform =
         MethodChannel('com.example.flutter_screen_clock/master_switch');
@@ -731,27 +733,22 @@ class _MyHomePageState extends State<MyHomePage>
 
   // 添加总开关控制方法
   void _setMasterSwitch(bool value) async {
-    isMasterSwitchOn.value = value;
-    await SpUtils.setBool("isMasterSwitchOn", value);
-
-    if (!value) {
-      // 关闭总开关时，关闭所有功能
-      _setNotificationReminder(false);
-      _setWeatherAlarmEnabled(false);
-      _setAWordDay(false);
-
-      // 停止所有服务
-      NotificationService.instance.stopListening();
-      _timer?.cancel();
-    }
-
     const platform =
         MethodChannel('com.example.flutter_screen_clock/master_switch');
     try {
       await platform.invokeMethod('updateMasterSwitch', {'isOn': value});
-      print("Master switch state sent to native: $value");
+      isMasterSwitchOn.value = value;
+      // 保存状态到本地存储
+      await SpUtils.setBool('master_switch', value);
+
+      // 如果开启主开关，检查是否需要显示轮播图
+      if (value) {
+        await platform.invokeMethod('enableLockScreen');
+      } else {
+        await platform.invokeMethod('disableLockScreen');
+      }
     } catch (e) {
-      print("Error sending master switch state: $e");
+      print('Error updating master switch: $e');
     }
   }
 
@@ -759,51 +756,21 @@ class _MyHomePageState extends State<MyHomePage>
   Widget _buildSettingsPanel() {
     return Column(
       children: [
-        // 总开关
         Container(
-          margin: EdgeInsets.fromLTRB(
-              ScreenUtilHelper.setWidth(20),
-              ScreenUtilHelper.setHeight(10),
-              ScreenUtilHelper.setWidth(20),
-              ScreenUtilHelper.setHeight(10)),
-          // padding: EdgeInsets.fromLTRB(ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5), ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5)),
+          margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius:
-                  BorderRadius.circular(ScreenUtilHelper.setHeight(20))),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: ListTile(
             title: Text("总开关",
-                style: TextStyle(
-                    color: const Color(0xFF323031),
-                    fontSize: ScreenUtilHelper.setSp(20),
-                    fontWeight: FontWeight.bold)),
-            subtitle: Padding(
-              padding: EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
-              child: Text(
-                "", // 使用 RxBool 的值
-                style: TextStyle(fontSize: ScreenUtilHelper.setSp(14)),
-              ),
-            ),
-            trailing: Obx(() => Container(
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isMasterSwitchOn.value
-                              ? const Color.fromRGBO(71, 234, 139, 0.3)
-                              : const Color.fromRGBO(255, 70, 80, 0.3),
-                          offset: const Offset(5, 3),
-                          blurRadius: 5,
-                          spreadRadius: 0,
-                        ),
-                      ]),
-                  child: SwitcherXlive(
-                    value: isMasterSwitchOn.value,
-                    onChanged: _setMasterSwitch,
-                    activeColor: const Color(0xFF47EA8B),
-                    unActiveColor: const Color(0xFFFF4650),
-                    thumbColor: Colors.white,
-                  ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            trailing: Obx(() => SwitcherXlive(
+                  value: isMasterSwitchOn.value,
+                  onChanged: _setMasterSwitch,
+                  activeColor: Color(0xFF47EA8B),
+                  unActiveColor: Color(0xFFFF4650),
+                  thumbColor: Colors.white,
                 )),
           ),
         ),
@@ -1078,6 +1045,25 @@ class _MyHomePageState extends State<MyHomePage>
     } catch (e) {
       print("Error getting master switch state: $e");
       return false;
+    }
+  }
+
+  // 加载保存的主开关状态
+  Future<void> _loadMasterSwitchState() async {
+    const platform =
+        MethodChannel('com.example.flutter_screen_clock/master_switch');
+    try {
+      // 从本地存储读取状态
+      bool savedState = await SpUtils.getBool('master_switch') ?? false;
+      isMasterSwitchOn.value = savedState;
+
+      // 通知原生端当前状态
+      if (savedState) {
+        await platform.invokeMethod('updateMasterSwitch', {'isOn': true});
+        await platform.invokeMethod('enableLockScreen');
+      }
+    } catch (e) {
+      print('Error loading master switch state: $e');
     }
   }
 }

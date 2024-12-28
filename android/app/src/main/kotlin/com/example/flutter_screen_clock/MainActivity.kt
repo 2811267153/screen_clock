@@ -19,6 +19,8 @@ import android.view.WindowManager.LayoutParams
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import android.os.PowerManager
+import android.app.ActivityOptions
 
 /**
  * 主活动类，处理锁屏和 Flutter 通信
@@ -42,28 +44,26 @@ class MainActivity: FlutterActivity() {
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
-                Intent.ACTION_SCREEN_OFF -> {  // 屏幕关闭时
-                    if (isMasterSwitchOn && !isLockScreenActive) {
-                        enableLockScreen()  // 启用锁屏
+                Intent.ACTION_SCREEN_OFF -> {
+                    if (isMasterSwitchOn) {
+                        handler.postDelayed({
+                            showCarouselOnLockScreen()
+                        }, 100)
                     }
-                }
-                Intent.ACTION_USER_PRESENT -> {  // 用户解锁时
-                    disableLockScreen()  // 禁用锁屏
                 }
             }
         }
     }
 
     /**
-     * 活动创建时的初始化
+     * 活动创建时的初��化
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // 注册锁屏广播接收器
+        // 注册屏幕状态广播接收器
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
-            addAction(Intent.ACTION_USER_PRESENT)
         }
         registerReceiver(screenReceiver, filter)
     }
@@ -74,7 +74,7 @@ class MainActivity: FlutterActivity() {
     override fun onDestroy() {
         super.onDestroy()
         try {
-            unregisterReceiver(screenReceiver)  // 注销广播接收器
+            unregisterReceiver(screenReceiver)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -107,6 +107,10 @@ class MainActivity: FlutterActivity() {
                             isHandlingToast = false
                         }, 1000)  // 1秒后重置状态
                     }
+                }
+                "openCarousel" -> {
+                    openCarousel()
+                    result.success(null)
                 }
                 else -> result.notImplemented()
             }
@@ -155,42 +159,7 @@ class MainActivity: FlutterActivity() {
      */
     private fun enableLockScreen() {
         isLockScreenActive = true
-        
-        runOnUiThread {
-            // 适配 Android 8.1 及以上版本
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                setShowWhenLocked(true)  // 在锁屏界面上显示
-                setTurnScreenOn(true)    // 打开屏幕
-                
-                val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-                keyguardManager.requestDismissKeyguard(this, null)  // 请求解除系统锁屏
-            }
-
-            // 设置窗口属性
-            window.apply {
-                addFlags(
-                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or      // 保持屏幕常亮
-                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or    // 解除系统锁屏
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or   // 在锁屏界面上显示
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON        // 打开屏幕
-                )
-
-                // 适配刘海屏
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    attributes.layoutInDisplayCutoutMode = 
-                        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-                }
-            }
-
-            // 处理系统UI（状态栏和导航栏）
-            WindowCompat.setDecorFitsSystemWindows(window, false)
-            WindowInsetsControllerCompat(window, window.decorView).apply {
-                hide(WindowInsetsCompat.Type.systemBars())  // 隐藏系统栏
-                systemBarsBehavior = 
-                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE  // 设置滑动显示
-            }
-        }
-
+        showCarouselOnLockScreen()
         println("Lock screen enabled")
     }
 
@@ -234,6 +203,43 @@ class MainActivity: FlutterActivity() {
         isMasterSwitchOn = isOn
         if (!isOn && isLockScreenActive) {
             disableLockScreen()
+        }
+    }
+
+    private fun openCarousel() {
+        val intent = Intent(this, CarouselActivity::class.java)
+        startActivity(intent)
+    }
+
+    private fun showCarouselOnLockScreen() {
+        val intent = Intent(this, CarouselActivity::class.java).apply {
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK
+                or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                or Intent.FLAG_ACTIVITY_NO_ANIMATION
+                or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
+            // 添加这些额外数据来标识这是锁屏启动
+            putExtra("from_lock_screen", true)
+        }
+        
+        try {
+            // 使用 startActivity 的重载方法，添加选项
+            startActivity(intent, ActivityOptions.makeBasic().toBundle())
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // 尝试使用替代方法
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            val wakeLock = powerManager.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK
+                or PowerManager.ACQUIRE_CAUSES_WAKEUP
+                or PowerManager.ON_AFTER_RELEASE, "flutter_screen_clock:WakeLock"
+            )
+            wakeLock.acquire(10*1000L) // 10秒后自动释放
+            
+            startActivity(intent)
+            wakeLock.release()
         }
     }
 }
