@@ -124,11 +124,26 @@ class _MyHomePageState extends State<MyHomePage>
 
   var dataItems = [].obs;
 
+  static const platform =
+      MethodChannel('com.example.flutter_screen_clock/master_switch');
+
   @override
   void initState() {
     super.initState();
     initAppData();
     WidgetsBinding.instance.addObserver(this);
+
+    platform.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case 'getMasterSwitchState':
+          return isMasterSwitchOn.value;
+        default:
+          throw PlatformException(
+            code: 'NotImplemented',
+            message: 'Method ${call.method} not implemented',
+          );
+      }
+    });
   }
 
   @override
@@ -628,8 +643,19 @@ class _MyHomePageState extends State<MyHomePage>
 
   /// 初始化应用数据
   void initAppData() async {
-    // 先获取总开关状态
-    isMasterSwitchOn.value = SpUtils.getBool("isMasterSwitchOn") ?? false;
+    // 先从原生端获取总开关状态
+    const platform =
+        MethodChannel('com.example.flutter_screen_clock/master_switch');
+    try {
+      final bool nativeMasterSwitch =
+          await platform.invokeMethod('getMasterSwitchState');
+      isMasterSwitchOn.value = nativeMasterSwitch;
+      print("Got master switch state from native: $nativeMasterSwitch");
+    } catch (e) {
+      print("Error getting master switch state: $e");
+      // 如果获取失败，则使用本地存储的值
+      isMasterSwitchOn.value = SpUtils.getBool("isMasterSwitchOn") ?? false;
+    }
 
     // 只有在总开关开启时才加载和启用其他开关状态
     if (isMasterSwitchOn.value) {
@@ -718,6 +744,15 @@ class _MyHomePageState extends State<MyHomePage>
       NotificationService.instance.stopListening();
       _timer?.cancel();
     }
+
+    const platform =
+        MethodChannel('com.example.flutter_screen_clock/master_switch');
+    try {
+      await platform.invokeMethod('updateMasterSwitch', {'isOn': value});
+      print("Master switch state sent to native: $value");
+    } catch (e) {
+      print("Error sending master switch state: $e");
+    }
   }
 
   // 修改设置界面的构建
@@ -789,8 +824,8 @@ class _MyHomePageState extends State<MyHomePage>
                   // padding: EdgeInsets.fromLTRB(ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5), ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5)),
                   decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius:
-                      BorderRadius.circular(ScreenUtilHelper.setHeight(20))),
+                      borderRadius: BorderRadius.circular(
+                          ScreenUtilHelper.setHeight(20))),
                   child: ListTile(
                     title: Text("沉浸式通知",
                         style: TextStyle(
@@ -798,7 +833,8 @@ class _MyHomePageState extends State<MyHomePage>
                             fontSize: ScreenUtilHelper.setSp(20),
                             fontWeight: FontWeight.bold)),
                     subtitle: Padding(
-                      padding: EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
+                      padding:
+                          EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
                       child: Text(
                         "", // 使用 RxBool 的值
                         style: TextStyle(fontSize: ScreenUtilHelper.setSp(14)),
@@ -830,7 +866,6 @@ class _MyHomePageState extends State<MyHomePage>
               ),
             )),
 
-
         // 天气闹钟开关
         Obx(() => Opacity(
               opacity: isMasterSwitchOn.value ? 1.0 : 0.5,
@@ -846,8 +881,8 @@ class _MyHomePageState extends State<MyHomePage>
                   // padding: EdgeInsets.fromLTRB(ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5), ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5)),
                   decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius:
-                      BorderRadius.circular(ScreenUtilHelper.setHeight(20))),
+                      borderRadius: BorderRadius.circular(
+                          ScreenUtilHelper.setHeight(20))),
                   child: ListTile(
                     title: Text("睡眠闹钟",
                         style: TextStyle(
@@ -855,7 +890,8 @@ class _MyHomePageState extends State<MyHomePage>
                             fontSize: ScreenUtilHelper.setSp(20),
                             fontWeight: FontWeight.bold)),
                     subtitle: Padding(
-                      padding: EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
+                      padding:
+                          EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
                       child: Text(
                         "", // 使用 RxBool 的值
                         style: TextStyle(fontSize: ScreenUtilHelper.setSp(14)),
@@ -921,8 +957,8 @@ class _MyHomePageState extends State<MyHomePage>
                   // padding: EdgeInsets.fromLTRB(ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5), ScreenUtilHelper.setWidth(0), ScreenUtilHelper.setHeight(5)),
                   decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius:
-                      BorderRadius.circular(ScreenUtilHelper.setHeight(20))),
+                      borderRadius: BorderRadius.circular(
+                          ScreenUtilHelper.setHeight(20))),
                   child: ListTile(
                     title: Text("每日一言",
                         style: TextStyle(
@@ -930,7 +966,8 @@ class _MyHomePageState extends State<MyHomePage>
                             fontSize: ScreenUtilHelper.setSp(20),
                             fontWeight: FontWeight.bold)),
                     subtitle: Padding(
-                      padding: EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
+                      padding:
+                          EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
                       child: Text(
                         "", // 使用 RxBool 的值
                         style: TextStyle(fontSize: ScreenUtilHelper.setSp(14)),
@@ -1032,6 +1069,15 @@ class _MyHomePageState extends State<MyHomePage>
       SpUtils.setBool("isNotificationReminder", false);
       NativeToast.showToast("权限获取异常，请重新开启权限");
       debugPrint("权限检查异常: $e");
+    }
+  }
+
+  Future<bool> getMasterSwitchState() async {
+    try {
+      return isMasterSwitchOn.value;
+    } catch (e) {
+      print("Error getting master switch state: $e");
+      return false;
     }
   }
 }
