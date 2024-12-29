@@ -14,71 +14,204 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import android.os.Build
 import androidx.annotation.RequiresApi
+import android.view.LayoutInflater
+import androidx.fragment.app.Fragment
+import android.util.Log
 
-class CarouselActivity : AppCompatActivity() {
+class CarouselActivity : Fragment() {
+    // ViewPager2 用于实现轮播效果
     private lateinit var viewPager: ViewPager2
+    // 存放指示器小圆点的容器
     private lateinit var indicatorContainer: LinearLayout
+    // 轮播页面总数
     private val pageCount = 4
+    // 存储指示器小圆点的集合
     private val indicators = mutableListOf<ImageView>()
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        
-        // 设置窗口标志，允许在锁屏界面上显示
-        window.addFlags(
-            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-        )
-
-        // 请求解除系统锁屏
-        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-        keyguardManager.requestDismissKeyguard(this, null)
-
-        setContentView(R.layout.activity_fullscreen_carousel)
-
-        // 设置横屏全屏
-        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
-
-        viewPager = findViewById(R.id.viewPager)
-        indicatorContainer = findViewById(R.id.indicatorContainer)
-
-        // 设置适配器
-        viewPager.adapter = CarouselAdapter()
-
-        // 设置页面切换监听
-        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                updateIndicators(position)
-            }
-        })
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        // 记录日志，用于调试 Fragment 生命周期
+        Log.d("CarouselDebug", "onCreateView called")
+        // 加载轮播图的布局文件
+        return inflater.inflate(R.layout.activity_fullscreen_carousel, container, false)
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
+        Log.d("CarouselDebug", "onViewCreated called")
+
+        try {
+            // 初始化 ViewPager2 和指示器容器
+            viewPager = view.findViewById(R.id.viewPager)
+            indicatorContainer = view.findViewById(R.id.indicatorContainer)
+
+            // 设置 ViewPager2 的适配器
+            viewPager.adapter = CarouselAdapter()
+
+            // 创建底部的指示器小圆点
+//            createIndicators() //默认不显示
+
+            // 监听页面切换事件，更新指示器状态
+            viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    updateIndicators(position)
+                }
+            })
+
+            Log.d("CarouselDebug", "ViewPager setup complete")
+        } catch (e: Exception) {
+            // 捕获并记录初始化过程中的任何错误
+            Log.e("CarouselDebug", "Error setting up carousel: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+    // 创建底部指示器小圆点
+    private fun createIndicators() {
+        for (i in 0 until pageCount) {
+            val indicator = ImageView(requireContext()).apply {
+                // 设置指示器图片，第一个为选中状态
+                setImageResource(if (i == 0) R.drawable.indicator_selected else R.drawable.indicator_unselected)
+                // 设置指示器的布局参数
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    // 设置指示器之间的间距
+                    setMargins(8, 0, 8, 0)
+                }
+                layoutParams = params
+            }
+            // 将指示器添加到集合和视图中
+            indicators.add(indicator)
+            indicatorContainer.addView(indicator)
+        }
+    }
+
+    // 更新指示器状态
     private fun updateIndicators(position: Int) {
         for (i in indicators.indices) {
-            indicators[i].setBackgroundResource(
+            // 更新指示器图片，当前页对应的指示器显示选中状态
+            indicators[i].setImageResource(
                 if (i == position) R.drawable.indicator_selected 
                 else R.drawable.indicator_unselected
             )
         }
     }
 
+    // ViewPager2 的适配器
     inner class CarouselAdapter : RecyclerView.Adapter<CarouselAdapter.ViewHolder>() {
+        // ViewHolder 类定义
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val pageText: TextView = view.findViewById(R.id.pageText)
+            // 右侧文本视图
+            val rightText: TextView = view.findViewById(R.id.rightText)
+            // 左侧竖向轮播
+            val verticalViewPager: ViewPager2 = view.findViewById(R.id.verticalViewPager)
+            val verticalIndicatorContainer: LinearLayout = view.findViewById(R.id.verticalIndicatorContainer)
+            // 存储垂直指示器
+            val verticalIndicators = mutableListOf<ImageView>()
         }
 
+        // 创建 ViewHolder
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = layoutInflater.inflate(R.layout.item_carousel, parent, false)
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_carousel, parent, false)
             return ViewHolder(view)
         }
 
+        // 绑定数据到 ViewHolder
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.pageText.text = (position + 1).toString()
+            when (position) {
+                0 -> {
+                    // 设置右侧内容
+                    holder.rightText.text = "右侧区域"
+                    
+                    // 设置左侧竖向轮播
+                    setupVerticalCarousel(holder)
+                }
+                else -> {
+                    // 其他页面的内容
+                    holder.rightText.text = "Page ${position + 1}"
+                }
+            }
+            Log.d("CarouselDebug", "Binding view for position: $position")
+        }
+
+        // 设置竖向轮播
+        private fun setupVerticalCarousel(holder: ViewHolder) {
+            // 创建垂直轮播适配器
+            val verticalAdapter = VerticalCarouselAdapter()
+            holder.verticalViewPager.adapter = verticalAdapter
+
+            // 默认不显示指示器
+            holder.verticalIndicatorContainer.visibility = View.GONE
+
+            // 可选：创建指示器（默认不调用）
+            // createVerticalIndicators(holder)
+
+            // 监听垂直页面切换
+            holder.verticalViewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    // 如果需要显示指示器，可以取消下面的注释
+                    // updateVerticalIndicators(holder, position)
+                }
+            })
+        }
+
+        // 分离出来的创建垂直指示器方法
+        private fun createVerticalIndicators(holder: ViewHolder) {
+            // 清除旧的指示器
+            holder.verticalIndicatorContainer.removeAllViews()
+            holder.verticalIndicators.clear()
+
+            // 创建垂直指示器
+            for (i in 0 until 3) {
+                val indicator = ImageView(holder.itemView.context).apply {
+                    setImageResource(if (i == 0) R.drawable.indicator_selected else R.drawable.indicator_unselected)
+                    val params = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, 0, 0, 8) // 垂直间距
+                    }
+                    layoutParams = params
+                }
+                holder.verticalIndicators.add(indicator)
+                holder.verticalIndicatorContainer.addView(indicator)
+            }
+        }
+
+        // 分离出来的更新垂直指示器方法
+        private fun updateVerticalIndicators(holder: ViewHolder, position: Int) {
+            for (i in holder.verticalIndicators.indices) {
+                holder.verticalIndicators[i].setImageResource(
+                    if (i == position) R.drawable.indicator_selected 
+                    else R.drawable.indicator_unselected
+                )
+            }
+        }
+
+        // 垂直轮播适配器
+        inner class VerticalCarouselAdapter : RecyclerView.Adapter<VerticalCarouselAdapter.ViewHolder>() {
+            inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+                val text: TextView = view.findViewById(R.id.verticalItemText)
+            }
+
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+                val view = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.vertical_carousel_item, parent, false)
+                return ViewHolder(view)
+            }
+
+            override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+                holder.text.text = "${position + 1}"
+            }
+
+            override fun getItemCount() = 3 // 垂直轮播3页
         }
 
         override fun getItemCount() = pageCount

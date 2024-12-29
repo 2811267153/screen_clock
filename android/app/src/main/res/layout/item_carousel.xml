@@ -1,15 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/pageText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:textColor="@android:color/white"
-        android:textSize="72sp"
-        android:textStyle="bold" />
+    <!-- 左侧区域：包含竖向轮播图 -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1">
 
-</FrameLayout> 
+        <!-- 竖向轮播的 ViewPager2 -->
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/verticalViewPager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical" />
+
+        <!-- 右侧指示器容器 -->
+        <LinearLayout
+            android:id="@+id/verticalIndicatorContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="16dp"
+            android:orientation="vertical" />
+    </FrameLayout>
+
+    <!-- 右侧橙色部分 -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="#FFA500">
+
+        <TextView
+            android:id="@+id/rightText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:text="右侧内容" />
+    </FrameLayout>
+</LinearLayout> 
