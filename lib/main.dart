@@ -1015,6 +1015,32 @@ class _MyHomePageState extends State<MyHomePage>
                 ],
               ),
             )),
+
+        // 添加跳转到 ContainerActivity 的按钮
+        Container(
+          margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: ListTile(
+            title: Text(
+              "打开轮播页面",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            trailing: Icon(Icons.arrow_forward_ios),
+            onTap: () async {
+              const platform = MethodChannel('com.example.flutter_screen_clock/master_switch');
+              try {
+                await platform.invokeMethod('openContainer', {
+                  'master_switch_state': isMasterSwitchOn.value
+                });
+              } catch (e) {
+                print('Error opening ContainerActivity: $e');
+              }
+            },
+          ),
+        ),
       ],
     );
   }

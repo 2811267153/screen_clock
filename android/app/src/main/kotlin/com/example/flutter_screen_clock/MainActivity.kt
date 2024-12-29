@@ -134,6 +134,15 @@ class MainActivity: FlutterActivity() {
                         result.error("SWITCH_ERROR", e.message, null)
                     }
                 }
+                "openContainer" -> {
+                    try {
+                        val intent = Intent(this, CarouselContainerActivity::class.java)
+                        startActivity(intent)
+                        result.success(null)
+                    } catch (e: Exception) {
+                        result.error("NAVIGATION_ERROR", e.message, null)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
