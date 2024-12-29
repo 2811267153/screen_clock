@@ -55,8 +55,8 @@
             android:exported="false">
         </activity>
         <activity
-            android:name=".CarouselActivity"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:name=".CarouselContainerActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar.Fullscreen"
             android:screenOrientation="landscape"
             android:showOnLockScreen="true"
             android:launchMode="singleInstance"

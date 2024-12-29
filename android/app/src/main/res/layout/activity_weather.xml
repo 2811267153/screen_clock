@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:baselineAligned="false"
+    android:orientation="horizontal"
+    android:background="@android:color/black"
+    android:padding="20dp">
+
+    <!-- 左侧天气信息 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- 温度显示 -->
+        <TextView
+            android:id="@+id/temperature"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="72sp"
+            android:textColor="@android:color/white"
+            android:text="25°C"/>
+
+        <!-- 天气状况 -->
+        <TextView
+            android:id="@+id/weather_condition"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="10dp"
+            android:text="晴"/>
+
+        <!-- 湿度 -->
+        <TextView
+            android:id="@+id/humidity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textColor="#80FFFFFF"
+            android:layout_marginTop="10dp"
+            android:text="湿度: 65%"/>
+    </LinearLayout>
+
+    <!-- 右侧信息 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- 日期 -->
+        <TextView
+            android:id="@+id/date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"
+            android:textColor="@android:color/white"
+            android:text="2024年12月29日"/>
+
+        <!-- 农历 -->
+        <TextView
+            android:id="@+id/lunar_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textColor="#80FFFFFF"
+            android:layout_marginTop="10dp"
+            android:text="农历十一月十七"/>
+
+        <!-- 时间 -->
+        <TextClock
+            android:id="@+id/time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="48sp"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="20dp"
+            android:format12Hour="hh:mm:ss"
+            android:format24Hour="HH:mm:ss"/>
+    </LinearLayout>
+</LinearLayout> 

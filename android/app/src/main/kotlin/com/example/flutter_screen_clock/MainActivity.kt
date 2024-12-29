@@ -228,13 +228,13 @@ class MainActivity: FlutterActivity() {
     }
 
     private fun openCarousel() {
-        val intent = Intent(this, CarouselActivity::class.java)
+        val intent = Intent(this, CarouselContainerActivity::class.java)
         startActivity(intent)
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
     private fun showCarouselOnLockScreen() {
-        val intent = Intent(this, CarouselActivity::class.java).apply {
+        val intent = Intent(this, CarouselContainerActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK
                 or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -242,7 +242,6 @@ class MainActivity: FlutterActivity() {
                 or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 or Intent.FLAG_ACTIVITY_SINGLE_TOP
             )
-            // 添加这些额外数据来标识这是锁屏启动
             putExtra("from_lock_screen", true)
         }
         
