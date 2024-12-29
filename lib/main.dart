@@ -131,7 +131,6 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     super.initState();
     initAppData();
-    _loadMasterSwitchState();
     WidgetsBinding.instance.addObserver(this);
 
     platform.setMethodCallHandler((call) async {
@@ -645,18 +644,23 @@ class _MyHomePageState extends State<MyHomePage>
   /// 初始化应用数据
   Future<void> initAppData() async {
     await SpUtils.getInstance();
-    // 先从原生端获取总开关状态
-    const platform =
-        MethodChannel('com.example.flutter_screen_clock/master_switch');
-    try {
-      final bool nativeMasterSwitch =
-          await platform.invokeMethod('getMasterSwitchState');
-      isMasterSwitchOn.value = nativeMasterSwitch;
-      print("Got master switch state from native: $nativeMasterSwitch");
-    } catch (e) {
-      print("Error getting master switch state: $e");
-      // 如果获取失败，则使用本地存储的值
-      isMasterSwitchOn.value = SpUtils.getBool("isMasterSwitchOn") ?? false;
+
+    // 从本地存储读取主开关状态
+    bool savedState = SpUtils.getBool("isMasterSwitchOn") ?? false;
+    isMasterSwitchOn.value = savedState;
+
+    // 如果主开关是开启状态，确保原生端也同步更新状态
+    if (savedState) {
+      const platform =
+          MethodChannel('com.example.flutter_screen_clock/master_switch');
+      try {
+        // 更新原生端状态
+        await platform.invokeMethod('updateMasterSwitch', {'isOn': true});
+        // 确保锁屏功能启用
+        await platform.invokeMethod('enableLockScreen');
+      } catch (e) {
+        print("Error initializing master switch state: $e");
+      }
     }
 
     // 只有在总开关开启时才加载和启用其他开关状态
@@ -738,10 +742,8 @@ class _MyHomePageState extends State<MyHomePage>
     try {
       await platform.invokeMethod('updateMasterSwitch', {'isOn': value});
       isMasterSwitchOn.value = value;
-      // 保存状态到本地存储
-      await SpUtils.setBool('master_switch', value);
+      await SpUtils.setBool('isMasterSwitchOn', value);
 
-      // 如果开启主开关，检查是否需要显示轮播图
       if (value) {
         await platform.invokeMethod('enableLockScreen');
       } else {
@@ -1045,25 +1047,6 @@ class _MyHomePageState extends State<MyHomePage>
     } catch (e) {
       print("Error getting master switch state: $e");
       return false;
-    }
-  }
-
-  // 加载保存的主开关状态
-  Future<void> _loadMasterSwitchState() async {
-    const platform =
-        MethodChannel('com.example.flutter_screen_clock/master_switch');
-    try {
-      // 从本地存储读取状态
-      bool savedState = await SpUtils.getBool('master_switch') ?? false;
-      isMasterSwitchOn.value = savedState;
-
-      // 通知原生端当前状态
-      if (savedState) {
-        await platform.invokeMethod('updateMasterSwitch', {'isOn': true});
-        await platform.invokeMethod('enableLockScreen');
-      }
-    } catch (e) {
-      print('Error loading master switch state: $e');
     }
   }
 }

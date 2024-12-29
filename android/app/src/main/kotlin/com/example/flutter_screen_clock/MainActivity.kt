@@ -21,6 +21,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import android.os.PowerManager
 import android.app.ActivityOptions
+import androidx.annotation.RequiresApi
 
 /**
  * 主活动类，处理锁屏和 Flutter 通信
@@ -42,6 +43,7 @@ class MainActivity: FlutterActivity() {
      * 监听屏幕关闭和用户解锁事件
      */
     private val screenReceiver = object : BroadcastReceiver() {
+        @RequiresApi(Build.VERSION_CODES.M)
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_SCREEN_OFF -> {
@@ -56,7 +58,7 @@ class MainActivity: FlutterActivity() {
     }
 
     /**
-     * 活动创建时的初��化
+     * 活动创建时的初始化
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,6 +68,11 @@ class MainActivity: FlutterActivity() {
             addAction(Intent.ACTION_SCREEN_OFF)
         }
         registerReceiver(screenReceiver, filter)
+
+        // 如果主开关已经开启，确保锁屏监听正常工作
+        if (isMasterSwitchOn) {
+            enableLockScreen()
+        }
     }
 
     /**
@@ -159,7 +166,21 @@ class MainActivity: FlutterActivity() {
      */
     private fun enableLockScreen() {
         isLockScreenActive = true
-        showCarouselOnLockScreen()
+        
+        // 创建意图过滤器
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+        }
+        
+        // 尝试取消旧的注册
+        try {
+            unregisterReceiver(screenReceiver)
+        } catch (e: Exception) {
+            // 忽略未注册的异常
+        }
+        
+        // 注册新的广播接收器
+        registerReceiver(screenReceiver, filter)
         println("Lock screen enabled")
     }
 
@@ -211,6 +232,7 @@ class MainActivity: FlutterActivity() {
         startActivity(intent)
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun showCarouselOnLockScreen() {
         val intent = Intent(this, CarouselActivity::class.java).apply {
             addFlags(
