@@ -10,6 +10,8 @@ import 'package:table_calendar/table_calendar.dart';
 import '../util/ScreenUtilHelper.dart';
 
 class ClockWidget extends StatefulWidget {
+  const ClockWidget({super.key});
+
   @override
   _ClockWidgetState createState() => _ClockWidgetState();
 }

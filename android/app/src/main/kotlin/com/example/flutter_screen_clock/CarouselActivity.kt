@@ -1,22 +1,19 @@
 package com.example.flutter_screen_clock
 
-import android.app.KeyguardManager
-import android.content.Context
 import android.os.Bundle
+import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
-import android.os.Build
-import androidx.annotation.RequiresApi
-import android.view.LayoutInflater
-import androidx.fragment.app.Fragment
-import android.util.Log
+import com.example.flutter_screen_clock.calendar.CalendarPageManager
+import com.example.flutter_screen_clock.calendar.WeekComponent
 
 class CarouselActivity : Fragment() {
     // ViewPager2 用于实现轮播效果
@@ -25,7 +22,9 @@ class CarouselActivity : Fragment() {
     private lateinit var indicatorContainer: LinearLayout
     // 轮播页面总数
     private val pageCount = 4
+    
     // 存储指示器小圆点的集合
+
     private val indicators = mutableListOf<ImageView>()
 
     override fun onCreateView(
@@ -196,20 +195,57 @@ class CarouselActivity : Fragment() {
         }
 
         // 垂直轮播适配器
-        inner class VerticalCarouselAdapter : RecyclerView.Adapter<VerticalCarouselAdapter.ViewHolder>() {
-            inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        inner class VerticalCarouselAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            // 为普通页面创建新的 ViewHolder
+            inner class NormalViewHolder(view: View) : RecyclerView.ViewHolder(view) {
                 val text: TextView = view.findViewById(R.id.verticalItemText)
             }
 
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-                val view = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.vertical_carousel_item, parent, false)
-                return ViewHolder(view)
+            // 为日历页面创建新的 ViewHolder
+            inner class CalendarPageHolder(view: View) : RecyclerView.ViewHolder(view) {
+                val monthContainer: FrameLayout = view.findViewById(R.id.monthContainer)
+                val weekContainer: LinearLayout = view.findViewById(R.id.weekContainer)
             }
 
-            override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-                holder.text.text = "${position + 1}"
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+                return when (viewType) {
+                    0 -> {
+                        val view = LayoutInflater.from(parent.context)
+                            .inflate(R.layout.calendar_page, parent, false)
+                        CalendarPageHolder(view)
+                    }
+                    else -> {
+                        val view = LayoutInflater.from(parent.context)
+                            .inflate(R.layout.vertical_carousel_item, parent, false)
+                        NormalViewHolder(view)
+                    }
+                }
             }
+
+            override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+                when (position) {
+                    0 -> {
+                        if (holder is CalendarPageHolder) {
+                            // 添加年月显示
+                            holder.monthContainer.removeAllViews()
+                            holder.monthContainer.addView(
+                                CalendarPageManager().createYearMonthView(holder.itemView.context)
+                            )
+
+                            // 添加 WeekComponent
+                            holder.weekContainer.removeAllViews()
+                            holder.weekContainer.addView(WeekComponent(holder.itemView.context))
+                        }
+                    }
+                    else -> {
+                        if (holder is NormalViewHolder) {
+                            holder.text.text = "${position + 1}"
+                        }
+                    }
+                }
+            }
+
+            override fun getItemViewType(position: Int): Int = position
 
             override fun getItemCount() = 3 // 垂直轮播3页
         }

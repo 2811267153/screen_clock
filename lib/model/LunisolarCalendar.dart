@@ -35,13 +35,13 @@ class LunisolarCalendarModel {
 
   LunisolarCalendarModel({int? status, String? msg, Result? result}) {
     if (status != null) {
-      this._status = status;
+      _status = status;
     }
     if (msg != null) {
-      this._msg = msg;
+      _msg = msg;
     }
     if (result != null) {
-      this._result = result;
+      _result = result;
     }
   }
 
@@ -56,15 +56,15 @@ class LunisolarCalendarModel {
     _status = json['status'];
     _msg = json['msg'];
     _result =
-    json['result'] != null ? new Result.fromJson(json['result']) : null;
+    json['result'] != null ? Result.fromJson(json['result']) : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['status'] = this._status;
-    data['msg'] = this._msg;
-    if (this._result != null) {
-      data['result'] = this._result!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['status'] = _status;
+    data['msg'] = _msg;
+    if (_result != null) {
+      data['result'] = _result!.toJson();
     }
     return data;
   }
@@ -122,76 +122,76 @@ class Result {
         String? emonth,
         String? week}) {
     if (year != null) {
-      this._year = year;
+      _year = year;
     }
     if (month != null) {
-      this._month = month;
+      _month = month;
     }
     if (day != null) {
-      this._day = day;
+      _day = day;
     }
     if (yangli != null) {
-      this._yangli = yangli;
+      _yangli = yangli;
     }
     if (nongli != null) {
-      this._nongli = nongli;
+      _nongli = nongli;
     }
     if (star != null) {
-      this._star = star;
+      _star = star;
     }
     if (taishen != null) {
-      this._taishen = taishen;
+      _taishen = taishen;
     }
     if (wuxing != null) {
-      this._wuxing = wuxing;
+      _wuxing = wuxing;
     }
     if (chong != null) {
-      this._chong = chong;
+      _chong = chong;
     }
     if (sha != null) {
-      this._sha = sha;
+      _sha = sha;
     }
     if (shengxiao != null) {
-      this._shengxiao = shengxiao;
+      _shengxiao = shengxiao;
     }
     if (jiri != null) {
-      this._jiri = jiri;
+      _jiri = jiri;
     }
     if (zhiri != null) {
-      this._zhiri = zhiri;
+      _zhiri = zhiri;
     }
     if (xiongshen != null) {
-      this._xiongshen = xiongshen;
+      _xiongshen = xiongshen;
     }
     if (jishenyiqu != null) {
-      this._jishenyiqu = jishenyiqu;
+      _jishenyiqu = jishenyiqu;
     }
     if (caishen != null) {
-      this._caishen = caishen;
+      _caishen = caishen;
     }
     if (xishen != null) {
-      this._xishen = xishen;
+      _xishen = xishen;
     }
     if (fushen != null) {
-      this._fushen = fushen;
+      _fushen = fushen;
     }
     if (suici != null) {
-      this._suici = suici;
+      _suici = suici;
     }
     if (yi != null) {
-      this._yi = yi;
+      _yi = yi;
     }
     if (ji != null) {
-      this._ji = ji;
+      _ji = ji;
     }
     if (eweek != null) {
-      this._eweek = eweek;
+      _eweek = eweek;
     }
     if (emonth != null) {
-      this._emonth = emonth;
+      _emonth = emonth;
     }
     if (week != null) {
-      this._week = week;
+      _week = week;
     }
   }
 
@@ -272,31 +272,31 @@ class Result {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['year'] = this._year;
-    data['month'] = this._month;
-    data['day'] = this._day;
-    data['yangli'] = this._yangli;
-    data['nongli'] = this._nongli;
-    data['star'] = this._star;
-    data['taishen'] = this._taishen;
-    data['wuxing'] = this._wuxing;
-    data['chong'] = this._chong;
-    data['sha'] = this._sha;
-    data['shengxiao'] = this._shengxiao;
-    data['jiri'] = this._jiri;
-    data['zhiri'] = this._zhiri;
-    data['xiongshen'] = this._xiongshen;
-    data['jishenyiqu'] = this._jishenyiqu;
-    data['caishen'] = this._caishen;
-    data['xishen'] = this._xishen;
-    data['fushen'] = this._fushen;
-    data['suici'] = this._suici;
-    data['yi'] = this._yi;
-    data['ji'] = this._ji;
-    data['eweek'] = this._eweek;
-    data['emonth'] = this._emonth;
-    data['week'] = this._week;
+    final Map<String, dynamic> data = Map<String, dynamic>();
+    data['year'] = _year;
+    data['month'] = _month;
+    data['day'] = _day;
+    data['yangli'] = _yangli;
+    data['nongli'] = _nongli;
+    data['star'] = _star;
+    data['taishen'] = _taishen;
+    data['wuxing'] = _wuxing;
+    data['chong'] = _chong;
+    data['sha'] = _sha;
+    data['shengxiao'] = _shengxiao;
+    data['jiri'] = _jiri;
+    data['zhiri'] = _zhiri;
+    data['xiongshen'] = _xiongshen;
+    data['jishenyiqu'] = _jishenyiqu;
+    data['caishen'] = _caishen;
+    data['xishen'] = _xishen;
+    data['fushen'] = _fushen;
+    data['suici'] = _suici;
+    data['yi'] = _yi;
+    data['ji'] = _ji;
+    data['eweek'] = _eweek;
+    data['emonth'] = _emonth;
+    data['week'] = _week;
     return data;
   }
 }

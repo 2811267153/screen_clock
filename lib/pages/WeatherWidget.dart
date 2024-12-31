@@ -43,7 +43,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
 
   final todoList = [];
 
-  double _viewportFraction = 1;
+  final double _viewportFraction = 1;
 
   bool isGoodDayExpanded = false; // 控制"宜"的展开状态
   bool isNoDayExpanded = false; // 控制"忌"的展开状态
@@ -142,7 +142,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
                                             .padLeft(2, '0')
                                             .split('');
 
-                                        return Container(
+                                        return SizedBox(
                                           height: constraints.maxHeight,
                                           // color: Colors.redAccent,  // 用于调试
                                           child: Row(
@@ -435,12 +435,12 @@ class _WeatherWidgetState extends State<WeatherWidget>
   Widget _goodDay(List<String> goods) {
     final displayItems = isGoodDayExpanded ? goods : goods.take(5).toList();
 
-    return Container(
+    return SizedBox(
       height: 40, // 给定固定高度
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.green.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
@@ -454,7 +454,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
               ),
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               displayItems.join('  '),
@@ -474,12 +474,12 @@ class _WeatherWidgetState extends State<WeatherWidget>
   Widget _noGoodDay(List<String> bads) {
     final displayItems = isNoDayExpanded ? bads : bads.take(5).toList();
 
-    return Container(
+    return SizedBox(
       height: 40, // 给定固定高度
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.red.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
@@ -493,7 +493,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
               ),
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               displayItems.join('  '),
@@ -518,7 +518,7 @@ class _WeatherWidgetState extends State<WeatherWidget>
         child: Text(
           "没有提醒事项",
           style: TextStyle(
-              color: Color.fromARGB(131, 255, 255, 255),
+              color: const Color.fromARGB(131, 255, 255, 255),
               fontSize: ScreenUtilHelper.setSp(35)),
         ),
       );

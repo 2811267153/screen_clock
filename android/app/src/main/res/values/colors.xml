@@ -1,0 +1,6 @@
+<resources>
+    <color name="month_unselected_border">#22B15B</color>
+    <color name="month_unselected_text">#22B15B</color>
+    <color name="month_selected_background">#FF47EA8B</color>
+    <color name="month_selected_text">#FFFFFFFF</color> <!-- 白色 -->
+</resources> 

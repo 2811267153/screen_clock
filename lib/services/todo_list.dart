@@ -57,7 +57,7 @@ class ToDoListService extends GetxController {
     try {
       // 设置时间范围
       final DateTime startDate = DateTime.now();
-      final DateTime endDate = DateTime.now().add(Duration(days: 7));
+      final DateTime endDate = DateTime.now().add(const Duration(days: 7));
 
       // 获取事件
       final eventsResult = await _deviceCalendarPlugin.retrieveEvents(

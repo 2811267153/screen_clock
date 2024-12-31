@@ -11,8 +11,8 @@ class HttpService {
     // 初始化dio实例
     BaseOptions options = BaseOptions(
       baseUrl: "https://api.jisuapi.com", // 基础URL
-      connectTimeout: Duration(seconds: 10), // 连接超时时间
-      receiveTimeout: Duration(seconds: 8), // 响应超时时间
+      connectTimeout: const Duration(seconds: 10), // 连接超时时间
+      receiveTimeout: const Duration(seconds: 8), // 响应超时时间
     );
 
     dio = Dio(options);
@@ -53,8 +53,8 @@ class HttpService {
         onReceiveProgress: onReceiveProgress,
       );
       return response;
-    } on DioError catch (e) {
-      throw e;
+    } on DioException catch (e) {
+      rethrow;
     }
   }
 
@@ -79,8 +79,8 @@ class HttpService {
         onReceiveProgress: onReceiveProgress,
       );
       return response;
-    } on DioError catch (e) {
-      throw e;
+    } on DioException catch (e) {
+      rethrow;
     }
   }
 

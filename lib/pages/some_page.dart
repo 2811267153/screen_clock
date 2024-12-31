@@ -1,8 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/notification_service.dart';
-import '../util/ScreenUtilHelper.dart';
 import '../constants/notification_constants.dart';
 
 class SomePage extends StatefulWidget {

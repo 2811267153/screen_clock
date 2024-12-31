@@ -59,7 +59,7 @@ class _SwiperContainer extends State<SwiperContainer> with WidgetsBindingObserve
 
     late List<Widget> itemWidget = <Widget>[
       ClockWidget(),
-      WeatherWidget(weatherModel: homePageController.weatherModel.value, lunisolarCalendarModel: homePageController.lunisolarCalendarModel.value, color: Color(0xFFFFFFFF),)]; // 初始化itemWidget
+      WeatherWidget(weatherModel: homePageController.weatherModel.value, lunisolarCalendarModel: homePageController.lunisolarCalendarModel.value, color: const Color(0xFFFFFFFF),)]; // 初始化itemWidget
 
     return Scaffold(
       body: Container(

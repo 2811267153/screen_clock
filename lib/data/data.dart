@@ -7,7 +7,7 @@ class SpUtils {
 
   factory SpUtils() => _instance;
 
-  static late final SpUtils _instance = SpUtils._internal();
+  static final SpUtils _instance = SpUtils._internal();
 
   static late SharedPreferences _preferences;
 
@@ -142,7 +142,7 @@ class SpUtils {
   /// 判断是否是json字符串
   static _isJson(String value) {
     try {
-      JsonDecoder().convert(value);
+      const JsonDecoder().convert(value);
       return true;
     } catch (e) {
       return false;

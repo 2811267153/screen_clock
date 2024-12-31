@@ -382,7 +382,7 @@ class _MyHomePageState extends State<MyHomePage>
             subtitle: Padding(
               padding: EdgeInsets.only(top: ScreenUtilHelper.setWidth(2)),
               child: Text(
-                "$subTitle",
+                subTitle,
                 style: TextStyle(fontSize: ScreenUtilHelper.setSp(14)),
               ),
             ),
@@ -759,19 +759,19 @@ class _MyHomePageState extends State<MyHomePage>
     return Column(
       children: [
         Container(
-          margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
           ),
           child: ListTile(
-            title: Text("总开关",
+            title: const Text("总开关",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             trailing: Obx(() => SwitcherXlive(
                   value: isMasterSwitchOn.value,
                   onChanged: _setMasterSwitch,
-                  activeColor: Color(0xFF47EA8B),
-                  unActiveColor: Color(0xFFFF4650),
+                  activeColor: const Color(0xFF47EA8B),
+                  unActiveColor: const Color(0xFFFF4650),
                   thumbColor: Colors.white,
                 )),
           ),
@@ -872,6 +872,10 @@ class _MyHomePageState extends State<MyHomePage>
                           boxShadow: [
                             BoxShadow(
                               color: isWeatherAlarmEnabled.value
+
+
+
+
                                   ? const Color.fromRGBO(71, 234, 139, 0.3)
                                   : const Color.fromRGBO(255, 70, 80, 0.3),
                               offset: const Offset(5, 3),
@@ -971,7 +975,7 @@ class _MyHomePageState extends State<MyHomePage>
         // 如果开启了天气闹钟，显示时间选择器
         Obx(() => Visibility(
               visible: isWeatherAlarmEnabled.value && isMasterSwitchOn.value,
-              child: Column(
+              child: const Column(
                 children: [
                   // // 起床时间选择
                   // TimePickerSpinner(
@@ -1018,17 +1022,17 @@ class _MyHomePageState extends State<MyHomePage>
 
         // 添加跳转到 ContainerActivity 的按钮
         Container(
-          margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
           ),
           child: ListTile(
-            title: Text(
+            title: const Text(
               "打开轮播页面",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            trailing: Icon(Icons.arrow_forward_ios),
+            trailing: const Icon(Icons.arrow_forward_ios),
             onTap: () async {
               const platform = MethodChannel('com.example.flutter_screen_clock/master_switch');
               try {

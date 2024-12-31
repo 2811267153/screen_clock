@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center">
+
+    <!-- 年月显示区域 -->
+    <TextView
+        android:id="@+id/yearMonthText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:alpha="0.9" />
+
+    <!-- 日期显示区域 -->
+    <TextView
+        android:id="@+id/dayText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:textSize="72sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp" />
+
+    <!-- 星期显示区域 -->
+    <TextView
+        android:id="@+id/weekDayText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:layout_marginTop="8dp" />
+
+    <!-- 农历日期显示区域 -->
+    <TextView
+        android:id="@+id/lunarDateText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:alpha="0.9"
+        android:layout_marginTop="16dp" />
+</LinearLayout> 

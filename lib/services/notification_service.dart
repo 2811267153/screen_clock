@@ -20,11 +20,6 @@ class NotificationService extends GetxController {
   /// 通知监听的订阅对象
   StreamSubscription<ServiceNotificationEvent>? _subscription;
 
-  @override
-  void onInit() {
-    super.onInit();
-    // 初始化时暂不检查权限
-  }
 
   /// 检查通知权限状态
   /// 如果没有权限，会请求权限并等待用户操作
