@@ -42,19 +42,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".LockScreenActivity"
-            android:theme="@style/LockScreenTheme"
-            android:showOnLockScreen="true"
-            android:launchMode="singleTask"
-            android:excludeFromRecents="true"
-            android:screenOrientation="portrait"
-            android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:noHistory="true"
-            android:taskAffinity="com.example.flutter_screen_clock.lock"
-            android:exported="false">
-        </activity>
-        <activity
             android:name=".CarouselContainerActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar.Fullscreen"
             android:screenOrientation="landscape"

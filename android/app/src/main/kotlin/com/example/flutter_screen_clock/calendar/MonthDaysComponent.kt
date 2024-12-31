@@ -4,14 +4,18 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.TextView
+import androidx.annotation.RequiresApi
+import com.example.flutter_screen_clock.R
 import java.util.Calendar
 
+@RequiresApi(Build.VERSION_CODES.M)
 class MonthDaysComponent @JvmOverloads constructor(
     context: Context, 
     attrs: AttributeSet? = null
@@ -77,14 +81,17 @@ class MonthDaysComponent @JvmOverloads constructor(
 
                 // 设置文本颜色
                 val isWeekend = dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY
-                setTextColor(if (isWeekend) Color.argb(102, 255, 255, 255) else Color.WHITE)
+                setTextColor(context.getColor(
+                    if (isWeekend) R.color.calendar_weekend_text 
+                    else R.color.calendar_weekday_text
+                ))
 
                 // 只为今天设置背景
                 if (isToday) {
                     background = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
-                        cornerRadius = context.resources.displayMetrics.density * 20 // 20dp
-                        setColor(0xFFFF4650.toInt())
+                        cornerRadius = context.resources.displayMetrics.density * 20
+                        setColor(context.getColor(R.color.calendar_today_background))
                     }
                 }
 

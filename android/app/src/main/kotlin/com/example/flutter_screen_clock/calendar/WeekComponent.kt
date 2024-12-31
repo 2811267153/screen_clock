@@ -1,13 +1,17 @@
 package com.example.flutter_screen_clock.calendar
 
 import android.content.Context
-import android.graphics.Color
 import android.graphics.Typeface
+import android.os.Build
 import android.util.AttributeSet
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.view.Gravity
+import androidx.annotation.RequiresApi
 
+import com.example.flutter_screen_clock.R
+
+@RequiresApi(Build.VERSION_CODES.M)
 class WeekComponent @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
@@ -32,14 +36,12 @@ class WeekComponent @JvmOverloads constructor(
                 gravity = Gravity.CENTER
                 
                 val isWeekend = index == 0 || index == 6
-                setTextColor(if (isWeekend) Color.argb(102, 255, 255, 255) else Color.WHITE)
+                setTextColor(context.getColor(
+                    if (isWeekend) R.color.calendar_weekend_text 
+                    else R.color.calendar_weekday_text
+                ))
 
-                layoutParams = LayoutParams(
-                    0,
-                    LayoutParams.WRAP_CONTENT
-                ).apply {
-                    weight = 1f
-                }
+                layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
             })
         }
     }

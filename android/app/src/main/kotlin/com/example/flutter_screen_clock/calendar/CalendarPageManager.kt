@@ -3,14 +3,18 @@ package com.example.flutter_screen_clock.calendar
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
+import android.os.Build
 import android.util.TypedValue
 import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.RequiresApi
+import com.example.flutter_screen_clock.R
 import java.util.Calendar
 
 class CalendarPageManager {
+    @RequiresApi(Build.VERSION_CODES.M)
     fun createYearMonthView(context: Context): LinearLayout {
         val calendar = Calendar.getInstance()
         val currentYear = calendar.get(Calendar.YEAR)
@@ -36,9 +40,8 @@ class CalendarPageManager {
                 text = "${currentMonth}月"
                 setTextSize(TypedValue.COMPLEX_UNIT_DIP, 30f)
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(0xFFFF4650.toInt())  // 修改为不透明的红色
+                setTextColor(context.getColor(R.color.calendar_month_text))
 
-                // 添加右边距
                 val rightPadding = (context.resources.displayMetrics.density * 20).toInt()
                 setPadding(0, 0, rightPadding, 0)
             })
@@ -48,9 +51,8 @@ class CalendarPageManager {
                 text = "${currentYear}年"
                 setTextSize(TypedValue.COMPLEX_UNIT_DIP, 30f)
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.argb(102, 255, 255, 255))  // 保持年份的半透明效果
+                setTextColor(context.getColor(R.color.calendar_weekend_text))
 
-                // 添加右边距
                 val rightPadding = (context.resources.displayMetrics.density * 20).toInt()
                 setPadding(0, 0, rightPadding, 0)
             })

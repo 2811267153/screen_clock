@@ -2,5 +2,10 @@
     <color name="month_unselected_border">#22B15B</color>
     <color name="month_unselected_text">#22B15B</color>
     <color name="month_selected_background">#FF47EA8B</color>
-    <color name="month_selected_text">#FFFFFFFF</color> <!-- 白色 -->
+    <color name="month_selected_text">#FFFFFFFF</color>
+    
+    <color name="calendar_today_background">#FFFF4650</color>
+    <color name="calendar_month_text">#FFFF4650</color>
+    <color name="calendar_weekend_text">#66FFFFFF</color>
+    <color name="calendar_weekday_text">#FFFFFFFF</color>
 </resources> 
