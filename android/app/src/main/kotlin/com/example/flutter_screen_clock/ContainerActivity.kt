@@ -52,7 +52,7 @@ class ContainerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         // 强制显示 Fragment
-        val fragment = supportFragmentManager.findFragmentById(R.id.carousel_container)
+        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
         Log.d("FragmentDebug", "CarouselFragment found: $fragment")
 
         // 设置窗口标志，允许在锁屏界面上显示
@@ -86,13 +86,13 @@ class ContainerActivity : AppCompatActivity() {
 
             // 添加 Fragment 到容器中
             supportFragmentManager.beginTransaction()
-                .add(R.id.carousel_container, carouselFragment)
+                .add(R.id.fragment_container, carouselFragment)
                 .add(R.id.weather_container, weatherFragment)
                 .hide(weatherFragment)  // 默认隐藏天气页面
                 .commitNow()  // 使用 commitNow 立即执行
         } else {
             // 从已保存状态恢复 Fragment
-            carouselFragment = supportFragmentManager.findFragmentById(R.id.carousel_container)
+            carouselFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                 ?: CarouselActivity()
             weatherFragment = supportFragmentManager.findFragmentById(R.id.weather_container)
                 ?: WeatherActivity()

@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.View
+import androidx.core.view.marginBottom
 import com.example.flutter_screen_clock.R
 import java.util.Calendar
 
@@ -18,8 +19,9 @@ class DeskWeekDayView @JvmOverloads constructor(
     private var weekDayText = ""
     private val textPaint = Paint().apply {
         isAntiAlias = true
-        color = 0xFFFFFFFF.toInt()
+//        color = 0xFFFFFFFF.toInt()
         textAlign = Paint.Align.CENTER
+        color = context.getColor(R.color.calendar_week_text)
     }
     private val textBounds = Rect()
 

@@ -8,6 +8,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
+import android.util.Log
 
 class CarouselContainerActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.P)
@@ -40,12 +41,19 @@ class CarouselContainerActivity : AppCompatActivity() {
         // 设置布局延伸到导航栏下方
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        setContentView(R.layout.activity_carousel_container)
+        setContentView(R.layout.activity_container)
 
         if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, CarouselActivity())
-                .commit()
+            try {
+                val fragment = CarouselActivity()
+                Log.d("CarouselContainer", "Adding fragment to container")
+                supportFragmentManager.beginTransaction()
+                    .add(R.id.fragment_container, fragment)
+                    .commitNow()
+            } catch (e: Exception) {
+                Log.e("CarouselContainer", "Error adding fragment", e)
+                e.printStackTrace()
+            }
         }
     }
 

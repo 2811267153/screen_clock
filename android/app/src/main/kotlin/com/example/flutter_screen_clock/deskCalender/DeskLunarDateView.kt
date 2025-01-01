@@ -21,6 +21,7 @@ import java.util.Calendar
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.example.flutter_screen_clock.widget.ShimmerView
+import com.example.flutter_screen_clock.network.LunarCalendarResponse
 
 class DeskLunarDateView @JvmOverloads constructor(
     context: Context,
@@ -54,8 +55,9 @@ class DeskLunarDateView @JvmOverloads constructor(
                 // 移除 margin
                 setMargins(0, 0, 0, 0)
             }
-            setTextColor(0xFFFFFFFF.toInt())
-            textSize = 30f
+               // 设置白色带60%透明度的颜色
+            setTextColor(0x99FFFFFF.toInt())
+            textSize = 20f
             typeface = Typeface.DEFAULT_BOLD
             visibility = View.GONE
             includeFontPadding = false  // 移除字体内边距
@@ -81,7 +83,7 @@ class DeskLunarDateView @JvmOverloads constructor(
         
         scope.launch {
             Repository.getLunarCalendar(year, month, day)
-                .onSuccess { response ->
+                .onSuccess { response: LunarCalendarResponse ->
                     Log.d("DeskLunarDateView", "获取成功: ${response.nongli}")
                     hideLoading()
                     lunarText = response.nongli ?: "暂无数据"

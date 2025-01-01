@@ -4,12 +4,13 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <!-- 使用普通的 FrameLayout 作为 Fragment 容器 -->
+    <!-- Fragment 容器 -->
     <FrameLayout
-        android:id="@+id/carousel_container"
+        android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- 天气容器 -->
     <FrameLayout
         android:id="@+id/weather_container"
         android:layout_width="match_parent"

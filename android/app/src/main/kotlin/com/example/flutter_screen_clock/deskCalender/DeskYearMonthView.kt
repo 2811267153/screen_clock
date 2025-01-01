@@ -35,7 +35,14 @@ class DeskYearMonthView @JvmOverloads constructor(
             setTextSize(TypedValue.COMPLEX_UNIT_DIP, 30f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
-            setTextColor(context.getColor(R.color.calendar_weekday_text))  // 使用纯白色
+            
+            // 使用兼容方法设置颜色
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                setTextColor(context.getColor(R.color.calendar_weekday_text))
+            } else {
+                @Suppress("DEPRECATION")
+                setTextColor(context.resources.getColor(R.color.calendar_weekday_text))
+            }
 
             // 设置布局参数
             layoutParams = LayoutParams(

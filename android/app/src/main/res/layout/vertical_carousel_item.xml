@@ -4,6 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+<!--    竖向轮播图第二个item-->
     <!-- 顶部文本 -->
     <TextView
         android:id="@+id/verticalItemText"

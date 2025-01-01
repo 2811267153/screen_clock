@@ -6,6 +6,7 @@
     
     <color name="calendar_today_background">#FFFF4650</color>
     <color name="calendar_month_text">#FFFF4650</color>
+    <color name="calendar_week_text">#FFFF4650</color>
     <color name="calendar_weekend_text">#66FFFFFF</color>
     <color name="calendar_weekday_text">#FFFFFFFF</color>
 </resources> 
