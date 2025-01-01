@@ -30,6 +30,7 @@ class MainActivity: FlutterActivity() {
     // Flutter 通信通道常量
     private val CHANNEL = "com.example.flutter_screen_clock/toast"  // Toast 消息通道
     private val MASTER_SWITCH_CHANNEL = "com.example.flutter_screen_clock/master_switch"  // 主开关通道
+    private val LUNAR_CALENDAR_CHANNEL = "lunar_calendar_channel"
 
     // 状态变量
     private var isMasterSwitchOn = false  // 主开关状态
@@ -144,6 +145,14 @@ class MainActivity: FlutterActivity() {
                     }
                 }
                 else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LUNAR_CALENDAR_CHANNEL).setMethodCallHandler { call, result ->
+            if (call.method == "getLunarDate") {
+                result.success(null)  // Flutter 端会处理日期计算
+            } else {
+                result.notImplemented()
             }
         }
     }

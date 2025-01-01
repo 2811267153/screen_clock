@@ -1,5 +1,6 @@
 package com.example.flutter_screen_clock
 
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -9,6 +10,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
@@ -22,7 +24,7 @@ class CarouselActivity : Fragment() {
     private lateinit var indicatorContainer: LinearLayout
     // 轮播页面总数
     private val pageCount = 4
-    
+
     // 存储指示器小圆点的集合
 
     private val indicators = mutableListOf<ImageView>()
@@ -40,7 +42,7 @@ class CarouselActivity : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         Log.d("CarouselDebug", "onViewCreated called")
 
         try {
@@ -96,7 +98,7 @@ class CarouselActivity : Fragment() {
         for (i in indicators.indices) {
             // 更新指示器图片，当前页对应的指示器显示选中状态
             indicators[i].setImageResource(
-                if (i == position) R.drawable.indicator_selected 
+                if (i == position) R.drawable.indicator_selected
                 else R.drawable.indicator_unselected
             )
         }
@@ -128,7 +130,7 @@ class CarouselActivity : Fragment() {
                 0 -> {
                     // 设置右侧内容
                     holder.rightText.text = "右侧区域"
-                    
+
                     // 设置左侧竖向轮播
                     setupVerticalCarousel(holder)
                 }
@@ -188,7 +190,7 @@ class CarouselActivity : Fragment() {
         private fun updateVerticalIndicators(holder: ViewHolder, position: Int) {
             for (i in holder.verticalIndicators.indices) {
                 holder.verticalIndicators[i].setImageResource(
-                    if (i == position) R.drawable.indicator_selected 
+                    if (i == position) R.drawable.indicator_selected
                     else R.drawable.indicator_unselected
                 )
             }
@@ -222,6 +224,7 @@ class CarouselActivity : Fragment() {
                 }
             }
 
+            @RequiresApi(Build.VERSION_CODES.M)
             override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
                 when (position) {
                     0 -> {

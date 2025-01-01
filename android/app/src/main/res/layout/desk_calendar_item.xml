@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- 年月显示 -->
+    <com.example.flutter_screen_clock.deskCalender.DeskYearMonthView
+        android:id="@+id/deskYearMonth"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+<!--    &lt;!&ndash; 信息显示区域 &ndash;&gt;-->
+   <com.example.flutter_screen_clock.deskCalender.DeskInfoView
+       android:id="@+id/deskInfo"
+       android:layout_width="match_parent"
+       android:layout_height="0dp"
+       android:layout_weight="1" />
+
+</LinearLayout> 
