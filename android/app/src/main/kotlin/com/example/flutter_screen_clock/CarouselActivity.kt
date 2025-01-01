@@ -198,7 +198,7 @@ class CarouselActivity : Fragment() {
 
         // 垂直轮播适配器
         inner class VerticalCarouselAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-            // 为普通页面创建新的 ViewHolder
+            // 为台历页面创建新的 ViewHolder
             inner class NormalViewHolder(view: View) : RecyclerView.ViewHolder(view) {
                 val text: TextView = view.findViewById(R.id.verticalItemText)
             }
@@ -209,6 +209,9 @@ class CarouselActivity : Fragment() {
                 val weekContainer: LinearLayout = view.findViewById(R.id.weekContainer)
             }
 
+            // 为时钟页面创建新的 ViewHolder
+            inner class ClockPageHolder(view: View) : RecyclerView.ViewHolder(view)
+
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
                 return when (viewType) {
                     0 -> {
@@ -216,10 +219,15 @@ class CarouselActivity : Fragment() {
                             .inflate(R.layout.calendar_page, parent, false)
                         CalendarPageHolder(view)
                     }
-                    else -> {
+                    1 -> {
                         val view = LayoutInflater.from(parent.context)
                             .inflate(R.layout.vertical_carousel_item, parent, false)
                         NormalViewHolder(view)
+                    }
+                    else -> {
+                        val view = LayoutInflater.from(parent.context)
+                            .inflate(R.layout.clock_page, parent, false)
+                        ClockPageHolder(view)
                     }
                 }
             }
