@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:baselineAligned="false"
     android:orientation="horizontal"
-    android:background="@android:color/black"
+    android:background="#DDDDDD"
     android:padding="20dp">
 
     <!-- 左侧天气信息 -->

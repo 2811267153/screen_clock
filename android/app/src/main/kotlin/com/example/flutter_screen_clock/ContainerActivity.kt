@@ -84,12 +84,12 @@ class ContainerActivity : AppCompatActivity() {
             carouselFragment = CarouselActivity()
             weatherFragment = WeatherActivity()
 
-            // 添加 Fragment 到容器中
             supportFragmentManager.beginTransaction()
                 .add(R.id.fragment_container, carouselFragment)
-                .add(R.id.weather_container, weatherFragment)
-                .hide(weatherFragment)  // 默认隐藏天气页面
-                .commitNow()  // 使用 commitNow 立即执行
+                .add(R.id.fragment_container, weatherFragment)  // 使用同一个容器
+                .hide(weatherFragment)  // 默认隐藏轮播
+                .show(carouselFragment)   // 显示天气
+                .commitNow()
         } else {
             // 从已保存状态恢复 Fragment
             carouselFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
@@ -103,7 +103,8 @@ class ContainerActivity : AppCompatActivity() {
         Log.d("FragmentDebug", "WeatherFragment: $weatherFragment")
 
         // 默认显示轮播图
-        showWeather()
+        showCarousel()
+//        showWeather()
 
         // 注册屏幕状态广播接收器
         val filter = IntentFilter().apply {
@@ -119,10 +120,6 @@ class ContainerActivity : AppCompatActivity() {
             showCarousel()
         }
     }
-
-
-
-
 
     override fun onDestroy() {
         super.onDestroy()
@@ -165,16 +162,6 @@ class ContainerActivity : AppCompatActivity() {
     }
 
     /**
-     * 更新主开关状态
-     */
-    fun updateMasterSwitch(isOn: Boolean) {
-        isMasterSwitchOn = isOn
-        if (!isOn && isLockScreenActive) {
-            disableLockScreen()
-        }
-    }
-
-    /**
      * 显示轮播图页面
      */
     fun showCarousel() {
@@ -199,9 +186,12 @@ class ContainerActivity : AppCompatActivity() {
                 android.R.anim.fade_in,
                 android.R.anim.fade_out
             )
-            .show(weatherFragment)
             .hide(carouselFragment)
+            .show(weatherFragment)
             .commitNow()
+        
+        // 强制更新天气数据
+//        (weatherFragment as? WeatherActivity)?.updateWeatherData()
     }
 
     fun updateWeatherData(temperature: String, condition: String, humidity: String) {

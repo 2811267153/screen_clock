@@ -116,8 +116,14 @@ class MainActivity: FlutterActivity() {
                         }, 1000)  // 1秒后重置状态
                     }
                 }
-                "openCarousel" -> {
-                    openCarousel()
+//                "openCarouselActivity" -> {
+//                    val intent = Intent(this, CarouselContainerActivity::class.java)
+//                    startActivity(intent)
+//                    result.success(null)
+//                }
+                "openContainer" -> {
+                    val intent = Intent(this, ContainerActivity::class.java)
+                    startActivity(intent)
                     result.success(null)
                 }
                 else -> result.notImplemented()
@@ -135,14 +141,19 @@ class MainActivity: FlutterActivity() {
                         result.error("SWITCH_ERROR", e.message, null)
                     }
                 }
+//                "openContainer" -> {
+//                    try {
+//                        val intent = Intent(this, CarouselContainerActivity::class.java)
+//                        startActivity(intent)
+//                        result.success(null)
+//                    } catch (e: Exception) {
+//                        result.error("NAVIGATION_ERROR", e.message, null)
+//                    }
+//                }
                 "openContainer" -> {
-                    try {
-                        val intent = Intent(this, CarouselContainerActivity::class.java)
-                        startActivity(intent)
-                        result.success(null)
-                    } catch (e: Exception) {
-                        result.error("NAVIGATION_ERROR", e.message, null)
-                    }
+                    val intent = Intent(this, ContainerActivity::class.java)
+                    startActivity(intent)
+                    result.success(null)
                 }
                 else -> result.notImplemented()
             }
