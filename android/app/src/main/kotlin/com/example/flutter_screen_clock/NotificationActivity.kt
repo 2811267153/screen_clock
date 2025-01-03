@@ -13,9 +13,12 @@ import com.example.flutter_screen_clock.notification.NotificationListenerService
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import android.util.DisplayMetrics
 import android.util.Log
 import android.widget.LinearLayout
 import com.example.flutter_screen_clock.R
+import androidx.dynamicanimation.animation.SpringAnimation
+import androidx.dynamicanimation.animation.SpringForce
 
 class NotificationActivity : Fragment() {
     private lateinit var appNameText: TextView
@@ -24,7 +27,7 @@ class NotificationActivity : Fragment() {
     private lateinit var appIconView: ImageView
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
     private var notificationCount = 0
-    private var notificationCountText = 0
+    private lateinit var notificationCountText: TextView
     private lateinit var notificationLayout: LinearLayout
 
 
@@ -42,6 +45,12 @@ class NotificationActivity : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         Log.d("NotificationDebug", "onViewCreated called")
+        val displayMetrics = DisplayMetrics()
+        notificationLayout = view.findViewById<LinearLayout>(R.id.notificationLayout)
+        requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val screenHeight = displayMetrics.heightPixels
+        notificationLayout.translationY = screenHeight.toFloat()
+        notificationCountText = view.findViewById(R.id.notificationCountText)
 
         try {
             // 初始化视图
@@ -50,6 +59,15 @@ class NotificationActivity : Fragment() {
             timeText = view.findViewById(R.id.timeText)
             appIconView = view.findViewById(R.id.appIconView)
             notificationLayout = view.findViewById<LinearLayout>(R.id.notificationLayout)
+
+            // 获取屏幕高度
+            val displayMetrics = DisplayMetrics()
+            requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
+            val screenHeight = displayMetrics.heightPixels
+
+            // 设置初始位置在屏幕外
+            notificationLayout.translationY = screenHeight.toFloat()
+
 
             // 检查通知访问权限
             if (!isNotificationServiceEnabled()) {
@@ -71,10 +89,19 @@ class NotificationActivity : Fragment() {
     }
 
     private fun animateNotificationIn() {
-        val screenHeight = resources.displayMetrics.heightPixels
-        val animator = ObjectAnimator.ofFloat(notificationLayout, "translationY", screenHeight.toFloat(), 0f)
-        animator.duration = 500
-        animator.start()
+        val displayMetrics = DisplayMetrics()
+        requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val screenHeight = displayMetrics.heightPixels
+        notificationLayout.translationY = screenHeight.toFloat()
+
+        val springAnimation = SpringAnimation(notificationLayout, SpringAnimation.TRANSLATION_Y)
+        springAnimation.spring = SpringForce().apply {
+            finalPosition = 0f
+            stiffness = SpringForce.STIFFNESS_LOW
+            dampingRatio = SpringForce.DAMPING_RATIO_LOW_BOUNCY
+        }
+        springAnimation.start()
+        Log.d("NotificationDebug", "Starting animation in")
     }
 
     private fun animateNotificationOut() {
@@ -154,6 +181,12 @@ class NotificationActivity : Fragment() {
                     Log.e("NotificationDebug", "Error updating UI", e)
                 }
             }
+
+            // 更新通知计数
+            notificationCount++
+            notificationCountText.text = "$notificationCount 个通知"
+
+            // 不需要检测是否是第一个通知，只要检测到有新的通知直接触发动画
             animateNotificationIn()
         } catch (e: Exception) {
             Log.e("NotificationDebug", "Error processing notification", e)
@@ -166,7 +199,7 @@ class NotificationActivity : Fragment() {
         if (notificationCount < 0) {
             notificationCount = 0
         }
-//        notificationCountText.text = "$notificationCount 个通知"
+        notificationCountText.text = "$notificationCount 个通知"
 
         // 如果没有通知了，动画移出
         if (notificationCount == 0) {
