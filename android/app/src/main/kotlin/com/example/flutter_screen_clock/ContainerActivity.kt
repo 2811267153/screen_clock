@@ -1,5 +1,6 @@
 package com.example.flutter_screen_clock
 
+import NotificationActivity
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -20,7 +21,8 @@ import android.widget.TextView
 class ContainerActivity : AppCompatActivity() {
     private lateinit var carouselFragment: Fragment
     private lateinit var weatherFragment: Fragment
-    
+    private lateinit var notificationFragment:  Fragment
+
     // 状态变量
     private var isMasterSwitchOn = false  // 主开关状态
     private val handler = Handler(Looper.getMainLooper())  // UI 线程处理器
@@ -82,30 +84,30 @@ class ContainerActivity : AppCompatActivity() {
         // 初始化 Fragment
         if (savedInstanceState == null) {  // 只在首次创建时添加 Fragment
             carouselFragment = CarouselActivity()
-            weatherFragment = WeatherActivity()
+            notificationFragment = NotificationActivity()
 
             supportFragmentManager.beginTransaction()
                 .add(R.id.fragment_container, carouselFragment)
-                .add(R.id.fragment_container, weatherFragment)  // 使用同一个容器
-                .hide(weatherFragment)  // 默认隐藏轮播
-                .show(carouselFragment)   // 显示天气
+                .add(R.id.fragment_container, notificationFragment)  // 使用同一个容器
+                .hide(carouselFragment)  // 默认隐藏轮播
+                .show(notificationFragment)   // 显示天气
                 .commitNow()
         } else {
             // 从已保存状态恢复 Fragment
             carouselFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                 ?: CarouselActivity()
-            weatherFragment = supportFragmentManager.findFragmentById(R.id.weather_container)
+            notificationFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                 ?: WeatherActivity()
         }
 
         // 添加日志
         Log.d("FragmentDebug", "CarouselFragment: $carouselFragment")
-        Log.d("FragmentDebug", "WeatherFragment: $weatherFragment")
+        Log.d("FragmentDebug", "notificationFragment: $notificationFragment")
 
         // 默认显示轮播图
-        showCarousel()
+//        showCarousel()
 //        showWeather()
-
+        showNotificationActivity()
         // 注册屏幕状态广播接收器
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
@@ -173,6 +175,17 @@ class ContainerActivity : AppCompatActivity() {
             )
             .show(carouselFragment)
             .hide(weatherFragment)
+            .commitNow()
+    }
+    private fun showNotificationActivity() {
+        Log.d("FragmentDebug", "Showing notificationFragment fragment")
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+            .show(notificationFragment)
+            .hide(carouselFragment)
             .commitNow()
     }
 
