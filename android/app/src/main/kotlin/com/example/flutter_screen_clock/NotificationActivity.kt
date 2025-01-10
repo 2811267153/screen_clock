@@ -1,4 +1,3 @@
-import android.animation.ObjectAnimator
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,10 +14,8 @@ import android.os.Bundle
 import android.provider.Settings
 import android.util.DisplayMetrics
 import android.util.Log
-import android.widget.LinearLayout
+import androidx.constraintlayout.widget.ConstraintLayout
 import com.example.flutter_screen_clock.R
-import androidx.dynamicanimation.animation.SpringAnimation
-import androidx.dynamicanimation.animation.SpringForce
 
 class NotificationActivity : Fragment() {
     private lateinit var appNameText: TextView
@@ -27,8 +24,7 @@ class NotificationActivity : Fragment() {
     private lateinit var appIconView: ImageView
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
     private var notificationCount = 0
-    private lateinit var notificationCountText: TextView
-    private lateinit var notificationLayout: LinearLayout
+    private lateinit var notificationLayout: ConstraintLayout
 
 
     override fun onCreateView(
@@ -46,11 +42,11 @@ class NotificationActivity : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         Log.d("NotificationDebug", "onViewCreated called")
         val displayMetrics = DisplayMetrics()
-        notificationLayout = view.findViewById<LinearLayout>(R.id.notificationLayout)
+        notificationLayout = view.findViewById<ConstraintLayout>(R.id.notificationLayout)
         requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
         val screenHeight = displayMetrics.heightPixels
         notificationLayout.translationY = screenHeight.toFloat()
-        notificationCountText = view.findViewById(R.id.notificationCountText)
+//        notificationCountText = view.findViewById(R.id.notificationCountText)
 
         try {
             // 初始化视图
@@ -58,7 +54,7 @@ class NotificationActivity : Fragment() {
             contentText = view.findViewById(R.id.contentText)
             timeText = view.findViewById(R.id.timeText)
             appIconView = view.findViewById(R.id.appIconView)
-            notificationLayout = view.findViewById<LinearLayout>(R.id.notificationLayout)
+            notificationLayout = view.findViewById<ConstraintLayout>(R.id.notificationLayout)
 
             // 获取屏幕高度
             val displayMetrics = DisplayMetrics()
@@ -89,26 +85,42 @@ class NotificationActivity : Fragment() {
     }
 
     private fun animateNotificationIn() {
-        val displayMetrics = DisplayMetrics()
-        requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
-        val screenHeight = displayMetrics.heightPixels
-        notificationLayout.translationY = screenHeight.toFloat()
-
-        val springAnimation = SpringAnimation(notificationLayout, SpringAnimation.TRANSLATION_Y)
-        springAnimation.spring = SpringForce().apply {
-            finalPosition = 0f
-            stiffness = SpringForce.STIFFNESS_LOW
-            dampingRatio = SpringForce.DAMPING_RATIO_LOW_BOUNCY
+        Log.d("NotificationDebug", "animateNotificationIn called")
+        val views = listOf(appIconView, appNameText, contentText, timeText)
+        
+        views.forEachIndexed { index, view ->
+            Log.d("NotificationDebug", "Animating view $index: ${view.id}")
+            view.alpha = 0f
+            view.translationY = 100f
+            
+            view.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(500)
+                .setStartDelay(index * 100L)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .withStartAction {
+                    Log.d("NotificationDebug", "Animation started for view $index")
+                }
+                .withEndAction {
+                    Log.d("NotificationDebug", "Animation ended for view $index")
+                }
+                .start()
         }
-        springAnimation.start()
-        Log.d("NotificationDebug", "Starting animation in")
     }
 
     private fun animateNotificationOut() {
-        val screenHeight = resources.displayMetrics.heightPixels
-        val animator = ObjectAnimator.ofFloat(notificationLayout, "translationY", 0f, screenHeight.toFloat())
-        animator.duration = 500
-        animator.start()
+        val views = listOf(timeText, contentText, appNameText, appIconView)
+        
+        views.forEachIndexed { index, view ->
+            view.animate()
+                .alpha(0f)
+                .translationY(100f)
+                .setDuration(500)
+                .setStartDelay(index * 50L)  // 错开动画开始时间
+                .setInterpolator(android.view.animation.AccelerateInterpolator())
+                .start()
+        }
     }
 
     private fun isNotificationServiceEnabled(): Boolean {
@@ -152,9 +164,7 @@ class NotificationActivity : Fragment() {
     // 更新通知的方法
     fun updateNotification(sbn: StatusBarNotification) {
         try {
-            val notification = sbn.notification
-            val extras = notification.extras
-
+            Log.d("NotificationDebug", "updateNotification called")
             activity?.runOnUiThread {
                 try {
                     // 获取应用名称
@@ -163,8 +173,8 @@ class NotificationActivity : Fragment() {
                     ) ?: ""
 
                     // 获取通知内容
-                    val title = extras.getString(Notification.EXTRA_TITLE, "")
-                    val text = extras.getString(Notification.EXTRA_TEXT, "")
+                    val title = sbn.notification.extras.getString(Notification.EXTRA_TITLE, "")
+                    val text = sbn.notification.extras.getString(Notification.EXTRA_TEXT, "")
 
                     // 获取应用图标
                     val icon = context?.packageManager?.getApplicationIcon(sbn.packageName)
@@ -177,31 +187,38 @@ class NotificationActivity : Fragment() {
                     appIconView.setImageDrawable(icon)
 
                     Log.d("NotificationDebug", "Updated notification: $appName - $title: $text")
+
+                    // 检查视图的可见性状态
+                    Log.d("NotificationDebug", "View visibility states:")
+                    Log.d("NotificationDebug", "notificationLayout visibility: ${notificationLayout.visibility}")
+                    Log.d("NotificationDebug", "appIconView visibility: ${appIconView.visibility}")
+                    Log.d("NotificationDebug", "appNameText visibility: ${appNameText.visibility}")
+                    
+                    // 确保父布局可见
+                    notificationLayout.visibility = View.VISIBLE
+                    
+                    // 触发进入动画
+                    animateNotificationIn()
                 } catch (e: Exception) {
-                    Log.e("NotificationDebug", "Error updating UI", e)
+                    Log.e("NotificationDebug", "Error in updateNotification", e)
                 }
             }
 
             // 更新通知计数
             notificationCount++
-            notificationCountText.text = "$notificationCount 个通知"
 
-            // 不需要检测是否是第一个通知，只要检测到有新的通知直接触发动画
-            animateNotificationIn()
         } catch (e: Exception) {
             Log.e("NotificationDebug", "Error processing notification", e)
         }
     }
 
     fun onNotificationRemoved(sbn: StatusBarNotification) {
-        // 更新通知计数并可能动画移出
         notificationCount--
         if (notificationCount < 0) {
             notificationCount = 0
         }
-        notificationCountText.text = "$notificationCount 个通知"
 
-        // 如果没有通知了，动画移出
+        // 如果没有通知了，触发退出动画
         if (notificationCount == 0) {
             animateNotificationOut()
         }

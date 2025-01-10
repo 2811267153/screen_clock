@@ -4,6 +4,7 @@ import NotificationActivity
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import com.example.flutter_screen_clock.ContainerActivity
 
 
 class NotificationListenerService : NotificationListenerService() {
@@ -31,25 +32,12 @@ class NotificationListenerService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        Log.d(TAG, "Notification Posted: ${sbn.packageName}")
-        
-        try {
-            // 过滤掉系统通知
-            if (sbn.packageName.startsWith("android") || 
-                sbn.packageName.startsWith("com.android")) {
-                return
-            }
-
-            // 过滤掉通知优先级较低的通知
-            if (sbn.notification.priority < android.app.Notification.PRIORITY_DEFAULT) {
-                return
-            }
-
-            // 更新通知界面
-            notificationActivity?.updateNotification(sbn)
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Error processing notification", e)
+        Log.d("NotificationDebug", "onNotificationPosted called")
+        notificationActivity?.let {
+            Log.d("NotificationDebug", "Updating notification activity")
+            it.updateNotification(sbn)
+            // 通知 ContainerActivity 显示通知
+            (it.activity as? ContainerActivity)?.handleNotification(true)
         }
     }
 

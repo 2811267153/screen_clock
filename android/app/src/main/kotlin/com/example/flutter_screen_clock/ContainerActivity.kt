@@ -216,4 +216,21 @@ class ContainerActivity : AppCompatActivity() {
             }
         }
     }
+
+    fun handleNotification(show: Boolean) {
+        Log.d("NotificationDebug", "handleNotification called with show: $show")
+        runOnUiThread {
+            if (show) {
+                supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        android.R.anim.fade_in,
+                        android.R.anim.fade_out
+                    )
+                    .show(notificationFragment)
+                    .hide(carouselFragment)
+                    .commitNow()
+                Log.d("NotificationDebug", "After transaction - notificationFragment isVisible: ${notificationFragment.isVisible}")
+            }
+        }
+    }
 } 
