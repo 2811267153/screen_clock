@@ -1,3 +1,7 @@
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,123 +15,344 @@ import android.app.Notification
 import com.example.flutter_screen_clock.notification.NotificationListenerService
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.DisplayMetrics
 import android.util.Log
-import androidx.constraintlayout.widget.ConstraintLayout
+import android.widget.LinearLayout
 import com.example.flutter_screen_clock.R
+import androidx.dynamicanimation.animation.SpringAnimation
+import androidx.dynamicanimation.animation.SpringForce
+import android.view.animation.AlphaAnimation
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.Animation
+import io.flutter.plugins.sharedpreferences.TAG
 
 class NotificationActivity : Fragment() {
-    private lateinit var appNameText: TextView
-    private lateinit var contentText: TextView
-    private lateinit var timeText: TextView
-    private lateinit var appIconView: ImageView
+    private lateinit var verticalAppIconView: ImageView
+    private lateinit var verticalAppName: TextView
+    private lateinit var verticalTitle: TextView
+    private lateinit var verticalText: TextView
+    private lateinit var notificationContainer: LinearLayout
+    private lateinit var notificationTextContainer: LinearLayout
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
-    private var notificationCount = 0
-    private lateinit var notificationLayout: ConstraintLayout
-
+//    private val handler = Handler(Looper.getMainLooper())
+    private var pendingNotificationCount = 0  // 添加计数器
+    private val layoutSwitchLock = Object()   // 添加锁对象
+    private val notificationStack = mutableListOf<StatusBarNotification>()  // 将队列改为栈结构，使用 ArrayList 实现
+    private var isProcessingNotifications = false  // 添加处理状态标记
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        Log.d("NotificationDebug", "onCreateView called")
-        val view = inflater.inflate(R.layout.activity_notification, container, false)
-        Log.d("NotificationDebug", "View inflated: $view")
-        return view
+        return inflater.inflate(R.layout.activity_notification, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        Log.d("NotificationDebug", "onViewCreated called")
-        val displayMetrics = DisplayMetrics()
-        notificationLayout = view.findViewById<ConstraintLayout>(R.id.notificationLayout)
-        requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
-        val screenHeight = displayMetrics.heightPixels
-        notificationLayout.translationY = screenHeight.toFloat()
-//        notificationCountText = view.findViewById(R.id.notificationCountText)
 
-        try {
-            // 初始化视图
-            appNameText = view.findViewById(R.id.appNameText)
-            contentText = view.findViewById(R.id.contentText)
-            timeText = view.findViewById(R.id.timeText)
-            appIconView = view.findViewById(R.id.appIconView)
-            notificationLayout = view.findViewById<ConstraintLayout>(R.id.notificationLayout)
+        // 初始化视图
+        notificationContainer = view.findViewById(R.id.notificationContainer)
+        notificationTextContainer = view.findViewById(R.id.notificationTextContainer)
+        verticalAppIconView = view.findViewById(R.id.verticalAppIconView)
+        verticalAppName = view.findViewById(R.id.verticalAppName)
+        verticalTitle = view.findViewById(R.id.verticalTitle)
+        verticalText = view.findViewById(R.id.verticalText)
 
-            // 获取屏幕高度
-            val displayMetrics = DisplayMetrics()
-            requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
-            val screenHeight = displayMetrics.heightPixels
+        // 检查通知访问权限
+        if (!isNotificationServiceEnabled()) {
+            verticalAppName.text = "通知监听"
+            verticalTitle.text = "请授予通知访问权限"
+            requestNotificationPermission()
+        } else {
+            NotificationListenerService.setNotificationActivity(this)
+        }
+    }
 
-            // 设置初始位置在屏幕外
-            notificationLayout.translationY = screenHeight.toFloat()
+    private fun switchToHorizontalLayout() {
+        activity?.runOnUiThread {
+            try {
+                // 创建动画
+                val fadeOut = AlphaAnimation(1f, 0f)
+                fadeOut.duration = 300
+                fadeOut.interpolator = AccelerateInterpolator()
+
+                val fadeIn = AlphaAnimation(0f, 1f)
+                fadeIn.duration = 300
+                fadeIn.interpolator = DecelerateInterpolator()
+                fadeIn.startOffset = 300 // 等待淡出动画完成
+
+                // 设置淡出动画结束后的操作
+                fadeOut.setAnimationListener(object : Animation.AnimationListener {
+                    override fun onAnimationStart(animation: Animation?) {}
+                    override fun onAnimationRepeat(animation: Animation?) {}
+                    override fun onAnimationEnd(animation: Animation?) {
+                        // 切换到水平布局
+                        notificationContainer.orientation = LinearLayout.HORIZONTAL
+
+                        // 调整图标大小和边距
+                        val iconParams = verticalAppIconView.layoutParams as LinearLayout.LayoutParams
+                        iconParams.width = resources.getDimensionPixelSize(R.dimen.icon_size_horizontal)
+                        iconParams.height = resources.getDimensionPixelSize(R.dimen.icon_size_horizontal)
+                        iconParams.setMargins(0, 0, resources.getDimensionPixelSize(R.dimen.icon_margin_end), 0)
+                        verticalAppIconView.layoutParams = iconParams
+
+                        // 调整文本容器
+                        val textContainerParams = notificationTextContainer.layoutParams as LinearLayout.LayoutParams
+                        textContainerParams.setMargins(0, 0, 0, 0)  // 水平布局时清除所有边距
+                        notificationTextContainer.layoutParams = textContainerParams
+
+                        // 开始淡入动画
+                        notificationContainer.startAnimation(fadeIn)
+                    }
+                })
+
+                // 开始淡出动画
+                notificationContainer.startAnimation(fadeOut)
+
+            } catch (e: Exception) {
+                Log.e("NotificationDebug", "Error switching to horizontal layout", e)
+                e.printStackTrace()
+            }
+        }
+    }
+
+    // 更新通知的方法
+//    fun updateNotification(sbn: StatusBarNotification) {
+//        synchronized(layoutSwitchLock) {
+//            // 将新通知添加到栈顶（列表开头）
+//            notificationStack.add(0, sbn)
+//
+//            // 如果正在处理通知，中断当前处理
+//            if (isProcessingNotifications) {
+//                handler.removeCallbacksAndMessages(null)  // 移除所有待处理的回调
+//                isProcessingNotifications = false
+//            }
+//
+//            // 开始处理新的通知序列
+//            processNextNotification()
+//        }
+//    }
+    private val notificationQueue: Queue<StatusBarNotification> = LinkedList()
+    fun updateNotification(sbn: StatusBarNotification) {
+        synchronized(layoutSwitchLock) {
+            notificationStack.clear() // 清空队列，确保只有最新通知
+            notificationStack.add(sbn)
+            Log.d("NotificationDebug", "Cleared stack and added new notification: ${sbn.packageName}")
+
+            handler.removeCallbacksAndMessages(null) // 移除所有延迟任务
+            processNextNotification() // 立即处理
+        }
+    }
 
 
-            // 检查通知访问权限
-            if (!isNotificationServiceEnabled()) {
-                // 显示一些默认内容
-                appNameText.text = "通知监听"
-                contentText.text = "请授予通知访问权限"
-                timeText.text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 
-                // 引导用户开启权限
-                requestNotificationPermission()
-            } else {
-                // 注册到通知监听服务
-                NotificationListenerService.setNotificationActivity(this)
+
+//    private fun processNextNotification() {
+//        synchronized(layoutSwitchLock) {
+//            if (notificationStack.isEmpty()) {
+//                isProcessingNotifications = false
+//                return
+//            }
+//
+//            isProcessingNotifications = true
+//            // 获取栈顶（最新）的通知
+//            val sbn = notificationStack[0]
+//
+//            try {
+//                val notification = sbn.notification
+//                val extras = notification.extras
+//
+//                activity?.runOnUiThread {
+//                    try {
+//                        // 重置为垂直布局
+//                        notificationContainer.orientation = LinearLayout.VERTICAL
+//
+//                        // 重置图标大小和边距
+//                        val iconParams = verticalAppIconView.layoutParams as LinearLayout.LayoutParams
+//                        iconParams.width = resources.getDimensionPixelSize(R.dimen.icon_size_vertical)
+//                        iconParams.height = resources.getDimensionPixelSize(R.dimen.icon_size_vertical)
+//                        iconParams.setMargins(0, 0, 0, 0)
+//                        verticalAppIconView.layoutParams = iconParams
+//
+//                        // 重置文本容器的边距
+//                        val textContainerParams = notificationTextContainer.layoutParams as LinearLayout.LayoutParams
+//                        textContainerParams.setMargins(0, resources.getDimensionPixelSize(R.dimen.text_container_margin_top), 0, 0)
+//                        notificationTextContainer.layoutParams = textContainerParams
+//
+//                        // 更新UI内容
+//                        val appName = context?.packageManager?.getApplicationLabel(
+//                            context?.packageManager?.getApplicationInfo(sbn.packageName, 0)!!
+//                        ) ?: ""
+//
+//                        val title = extras.getString(Notification.EXTRA_TITLE, "")
+//                        val text = extras.getString(Notification.EXTRA_TEXT, "")
+//                        val icon = context?.packageManager?.getApplicationIcon(sbn.packageName)
+//
+//                        notificationContainer.visibility = View.VISIBLE
+//                        verticalAppName.text = appName.toString()
+//                        verticalTitle.text = title
+//                        verticalText.text = text
+//                        verticalAppIconView.setImageDrawable(icon)
+//
+//                        // 检查是否还有更多通知
+//                        if (notificationStack.size == 1) {
+//                            // 是最后一条，延迟切换到水平布局
+//                            handler.postDelayed({
+//                                synchronized(layoutSwitchLock) {
+//                                    if (notificationStack.size == 1) {
+//                                        switchToHorizontalLayout()
+//                                        notificationStack.removeAt(0)
+//                                        isProcessingNotifications = false
+//                                    }
+//                                }
+//                            }, 3000)
+//                        } else {
+//                            // 还有更多通知，延迟显示下一条
+//                            handler.postDelayed({
+//                                synchronized(layoutSwitchLock) {
+//                                    if (!notificationStack.isEmpty()) {
+//                                        notificationStack.removeAt(0)  // 移除当前显示的通知
+//                                        processNextNotification()  // 处理下一条
+//                                    }
+//                                }
+//                            }, 3000)
+//                        }
+//
+//                    } catch (e: Exception) {
+//                        Log.e("NotificationDebug", "Error updating UI", e)
+//                        e.printStackTrace()
+//                        synchronized(layoutSwitchLock) {
+//                            if (!notificationStack.isEmpty()) {
+//                                notificationStack.removeAt(0)
+//                                processNextNotification()
+//                            }
+//                        }
+//                    }
+//                }
+//            } catch (e: Exception) {
+//                Log.e("NotificationDebug", "Error processing notification", e)
+//                e.printStackTrace()
+//                synchronized(layoutSwitchLock) {
+//                    if (!notificationStack.isEmpty()) {
+//                        notificationStack.removeAt(0)
+//                        processNextNotification()
+//                    }
+//                }
+//            }
+//        }
+//    }
+
+
+
+    private fun processNextNotification() {
+        synchronized(layoutSwitchLock) {
+            if (notificationStack.isEmpty()) {
+                isProcessingNotifications = false
+                Log.d("NotificationDebug", "Notification stack empty, stopping processing.")
+                return
             }
 
-        } catch (e: Exception) {
-            Log.e("NotificationDebug", "Error initializing views", e)
-        }
-    }
+            isProcessingNotifications = true
+            val sbn = notificationStack.removeAt(0) // 取出队列的第一条通知
+            Log.d("NotificationDebug", "Processing notification: ${sbn.packageName}")
 
-    private fun animateNotificationIn() {
-        Log.d("NotificationDebug", "animateNotificationIn called")
-        val views = listOf(appIconView, appNameText, contentText, timeText)
-        
-        views.forEachIndexed { index, view ->
-            Log.d("NotificationDebug", "Animating view $index: ${view.id}")
-            view.alpha = 0f
-            view.translationY = 100f
-            
-            view.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(500)
-                .setStartDelay(index * 100L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
-                .withStartAction {
-                    Log.d("NotificationDebug", "Animation started for view $index")
+            try {
+                val notification = sbn.notification
+                val extras = notification.extras
+
+                activity?.runOnUiThread {
+                    try {
+                        // 设置为垂直布局
+                        notificationContainer.orientation = LinearLayout.VERTICAL
+
+                        // 更新图标和文本
+                        val appName = context?.packageManager?.getApplicationLabel(
+                            context?.packageManager?.getApplicationInfo(sbn.packageName, 0)!!
+                        ) ?: ""
+                        val title = extras.getString(Notification.EXTRA_TITLE, "")
+                        val text = extras.getString(Notification.EXTRA_TEXT, "")
+                        val icon = context?.packageManager?.getApplicationIcon(sbn.packageName)
+
+                        verticalAppName.text = appName.toString()
+                        verticalTitle.text = title
+                        verticalText.text = text
+                        verticalAppIconView.setImageDrawable(icon)
+                        notificationContainer.visibility = View.VISIBLE
+
+                        // 延迟切换或处理下一条
+                        handler.postDelayed({
+                            synchronized(layoutSwitchLock) {
+                                if (notificationStack.isEmpty()) {
+                                    Log.d("NotificationDebug", "Switching to horizontal layout.")
+                                    switchToHorizontalLayout()
+                                    isProcessingNotifications = false
+                                } else {
+                                    processNextNotification()
+                                }
+                            }
+                        }, 3000) // 3 秒延迟
+                    } catch (e: Exception) {
+                        Log.e("NotificationDebug", "Error updating UI", e)
+                        handleError()
+                    }
                 }
-                .withEndAction {
-                    Log.d("NotificationDebug", "Animation ended for view $index")
-                }
-                .start()
+            } catch (e: Exception) {
+                Log.e("NotificationDebug", "Error processing notification", e)
+                handleError()
+            }
+        }
+    }
+    private fun handleError() {
+        synchronized(layoutSwitchLock) {
+            if (notificationStack.isNotEmpty()) {
+                notificationStack.removeAt(0)
+                processNextNotification()
+            } else {
+                isProcessingNotifications = false
+            }
         }
     }
 
-    private fun animateNotificationOut() {
-        val views = listOf(timeText, contentText, appNameText, appIconView)
-        
-        views.forEachIndexed { index, view ->
-            view.animate()
-                .alpha(0f)
-                .translationY(100f)
-                .setDuration(500)
-                .setStartDelay(index * 50L)  // 错开动画开始时间
-                .setInterpolator(android.view.animation.AccelerateInterpolator())
-                .start()
+
+    // 错误处理的辅助方法
+    private fun handleUIError() {
+        synchronized(layoutSwitchLock) {
+            if (notificationStack.isNotEmpty()) {
+                notificationStack.removeAt(0) // 移除当前通知
+                processNextNotification() // 继续处理下一条
+            } else {
+                isProcessingNotifications = false
+            }
         }
     }
 
+
+//    fun onNotificationRemoved(sbn: StatusBarNotification) {
+//        Log.d(TAG, "Notification Removed: ${sbn.packageName}")
+//        notificationActivity?.onNotificationRemoved(sbn)
+//    }
+
+    
     private fun isNotificationServiceEnabled(): Boolean {
-        val pkgName = requireContext().packageName
-        val flat = Settings.Secure.getString(requireContext().contentResolver,
-            "enabled_notification_listeners")
-        return flat != null && flat.contains(pkgName)
+        try {
+            // 检查基本的通知监听权限
+            val pkgName = requireContext().packageName
+            val flat = Settings.Secure.getString(requireContext().contentResolver,
+                "enabled_notification_listeners")
+            val hasPermission = flat != null && flat.contains(pkgName)
+            
+            Log.d("NotificationDebug", "Notification permission status: $hasPermission")
+            return hasPermission
+        } catch (e: Exception) {
+            Log.e("NotificationDebug", "Error checking notification permission", e)
+            return false
+        }
     }
 
     private fun requestNotificationPermission() {
@@ -138,101 +363,32 @@ class NotificationActivity : Fragment() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) {
-            // 用户从设置页面返回，延迟检查权限状态
             view?.postDelayed({
                 checkAndUpdatePermissionStatus()
-            }, 500) // 延迟500ms，确保系统设置已经保存
+            }, 500)
         }
     }
 
     private fun checkAndUpdatePermissionStatus() {
         if (isNotificationServiceEnabled()) {
-            // 有权限，注册到服务
             NotificationListenerService.setNotificationActivity(this)
-            // 更新UI显示等待通知状态
-            appNameText.text = "等待通知..."
-            contentText.text = ""
-            timeText.text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+            verticalAppName.text = "等待通知..."
+            verticalTitle.text = ""
+            verticalText.text = ""
         } else {
-            // 没有权限，显示提示
-            appNameText.text = "通知监听"
-            contentText.text = "请授予通知访问权限"
-            timeText.text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        }
-    }
-
-    // 更新通知的方法
-    fun updateNotification(sbn: StatusBarNotification) {
-        try {
-            Log.d("NotificationDebug", "updateNotification called")
-            activity?.runOnUiThread {
-                try {
-                    // 获取应用名称
-                    val appName = context?.packageManager?.getApplicationLabel(
-                        context?.packageManager?.getApplicationInfo(sbn.packageName, 0)!!
-                    ) ?: ""
-
-                    // 获取通知内容
-                    val title = sbn.notification.extras.getString(Notification.EXTRA_TITLE, "")
-                    val text = sbn.notification.extras.getString(Notification.EXTRA_TEXT, "")
-
-                    // 获取应用图标
-                    val icon = context?.packageManager?.getApplicationIcon(sbn.packageName)
-
-                    // 更新UI
-                    appNameText.text = appName.toString()
-                    contentText.text = if (title.isNullOrEmpty()) text else "$title: $text"
-                    timeText.text = SimpleDateFormat("HH:mm", Locale.getDefault())
-                        .format(Date(sbn.postTime))
-                    appIconView.setImageDrawable(icon)
-
-                    Log.d("NotificationDebug", "Updated notification: $appName - $title: $text")
-
-                    // 检查视图的可见性状态
-                    Log.d("NotificationDebug", "View visibility states:")
-                    Log.d("NotificationDebug", "notificationLayout visibility: ${notificationLayout.visibility}")
-                    Log.d("NotificationDebug", "appIconView visibility: ${appIconView.visibility}")
-                    Log.d("NotificationDebug", "appNameText visibility: ${appNameText.visibility}")
-                    
-                    // 确保父布局可见
-                    notificationLayout.visibility = View.VISIBLE
-                    
-                    // 触发进入动画
-                    animateNotificationIn()
-                } catch (e: Exception) {
-                    Log.e("NotificationDebug", "Error in updateNotification", e)
-                }
-            }
-
-            // 更新通知计数
-            notificationCount++
-
-        } catch (e: Exception) {
-            Log.e("NotificationDebug", "Error processing notification", e)
-        }
-    }
-
-    fun onNotificationRemoved(sbn: StatusBarNotification) {
-        notificationCount--
-        if (notificationCount < 0) {
-            notificationCount = 0
-        }
-
-        // 如果没有通知了，触发退出动画
-        if (notificationCount == 0) {
-            animateNotificationOut()
+            verticalAppName.text = "通知监听"
+            verticalTitle.text = "请授予通知访问权限"
+            verticalText.text = ""
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // 取消注册
         NotificationListenerService.setNotificationActivity(null)
     }
 
     override fun onResume() {
         super.onResume()
-        // 在恢复时检查权限，但不自动弹出设置页面
         checkAndUpdatePermissionStatus()
     }
 }

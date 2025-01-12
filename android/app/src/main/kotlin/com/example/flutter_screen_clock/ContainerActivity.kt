@@ -16,6 +16,10 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import android.widget.TextView
+import android.view.animation.AlphaAnimation
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.Animation
 
 
 class ContainerActivity : AppCompatActivity() {
@@ -27,6 +31,9 @@ class ContainerActivity : AppCompatActivity() {
     private var isMasterSwitchOn = false  // 主开关状态
     private val handler = Handler(Looper.getMainLooper())  // UI 线程处理器
     private var isLockScreenActive = false  // 锁屏状态标志
+    private val hideNotificationRunnable = Runnable {
+        handleNotification(false)
+    }
 
     /**
      * 锁屏广播接收器
@@ -88,26 +95,22 @@ class ContainerActivity : AppCompatActivity() {
 
             supportFragmentManager.beginTransaction()
                 .add(R.id.fragment_container, carouselFragment)
-                .add(R.id.fragment_container, notificationFragment)  // 使用同一个容器
-                .hide(carouselFragment)  // 默认隐藏轮播
-                .show(notificationFragment)   // 显示天气
+                .add(R.id.fragment_container, notificationFragment)
+                .hide(notificationFragment)  // 默认隐藏通知
+                .show(carouselFragment)     // 默认显示轮播图
                 .commitNow()
         } else {
             // 从已保存状态恢复 Fragment
-            carouselFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+            carouselFragment = supportFragmentManager.findFragmentByTag("carousel")
                 ?: CarouselActivity()
-            notificationFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                ?: WeatherActivity()
+            notificationFragment = supportFragmentManager.findFragmentByTag("notification")
+                ?: NotificationActivity()
         }
 
         // 添加日志
         Log.d("FragmentDebug", "CarouselFragment: $carouselFragment")
         Log.d("FragmentDebug", "notificationFragment: $notificationFragment")
 
-        // 默认显示轮播图
-//        showCarousel()
-//        showWeather()
-        showNotificationActivity()
         // 注册屏幕状态广播接收器
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
@@ -125,6 +128,7 @@ class ContainerActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacks(hideNotificationRunnable)
         try {
             unregisterReceiver(screenReceiver)
         } catch (e: Exception) {
@@ -217,19 +221,59 @@ class ContainerActivity : AppCompatActivity() {
         }
     }
 
+    private fun createFadeInAnimation(): Animation {
+        val fadeIn = AlphaAnimation(0f, 1f)
+        fadeIn.interpolator = DecelerateInterpolator()
+        fadeIn.duration = 800
+        return fadeIn
+    }
+
+    private fun createFadeOutAnimation(): Animation {
+        val fadeOut = AlphaAnimation(1f, 0f)
+        fadeOut.interpolator = AccelerateInterpolator()
+        fadeOut.duration = 800
+        return fadeOut
+    }
+
     fun handleNotification(show: Boolean) {
         Log.d("NotificationDebug", "handleNotification called with show: $show")
         runOnUiThread {
-            if (show) {
-                supportFragmentManager.beginTransaction()
-                    .setCustomAnimations(
-                        android.R.anim.fade_in,
-                        android.R.anim.fade_out
-                    )
-                    .show(notificationFragment)
-                    .hide(carouselFragment)
-                    .commitNow()
+            try {
+                Log.d("NotificationDebug", "Current fragments state:")
+                Log.d("NotificationDebug", "notificationFragment exists: ${notificationFragment != null}")
+                Log.d("NotificationDebug", "carouselFragment exists: ${carouselFragment != null}")
+                
+                if (show) {
+                    // 显示通知，隐藏轮播图
+                    notificationFragment.view?.startAnimation(createFadeInAnimation())
+                    carouselFragment.view?.startAnimation(createFadeOutAnimation())
+                    
+                    supportFragmentManager.beginTransaction()
+                        .show(notificationFragment)
+                        .hide(carouselFragment)
+                        .commitNow()
+                } else {
+                    // 隐藏通知，显示轮播图
+                    carouselFragment.view?.startAnimation(createFadeInAnimation())
+                    notificationFragment.view?.startAnimation(createFadeOutAnimation())
+                    
+                    supportFragmentManager.beginTransaction()
+                        .show(carouselFragment)
+                        .hide(notificationFragment)
+                        .commitNow()
+                }
+                
                 Log.d("NotificationDebug", "After transaction - notificationFragment isVisible: ${notificationFragment.isVisible}")
+                Log.d("NotificationDebug", "Fragment view exists: ${notificationFragment.view != null}")
+
+                if (show) {
+                    // 延长显示时间到 6 秒
+                    handler.removeCallbacks(hideNotificationRunnable)
+                    handler.postDelayed(hideNotificationRunnable, 6000)
+                }
+            } catch (e: Exception) {
+                Log.e("NotificationDebug", "Error handling notification visibility", e)
+                e.printStackTrace()
             }
         }
     }
