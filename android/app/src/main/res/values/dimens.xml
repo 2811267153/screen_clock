@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="icon_size_horizontal">64dp</dimen>
+    <dimen name="icon_size_horizontal">100dp</dimen>
     <dimen name="icon_margin_end">16dp</dimen>
-    <dimen name="icon_size_vertical">100dp</dimen>
-    <dimen name="text_container_margin_top">16dp</dimen>
+    <dimen name="icon_size_vertical">120dp</dimen>
+    <dimen name="text_container_margin_top">10dp</dimen>
+    <dimen name="notification_icon_size">100dp</dimen>
+    <dimen name="notification_margin_start">24dp</dimen>
+    <dimen name="notification_margin_bottom">48dp</dimen>
+    <dimen name="text_size_h_app_name">16sp</dimen>
+    <dimen name="text_size_h_title">22sp</dimen>
+    <dimen name="text_size_h_text">20sp</dimen>
+    <dimen name="text_margin_h_bottom">0dp</dimen>
+    <dimen name="text_size_v_app_name">16sp</dimen>
+    <dimen name="text_size_v_title">22sp</dimen>
+    <dimen name="text_size_v_text">16sp</dimen>
+    <dimen name="text_margin_v_top">0dp</dimen>
 </resources> 
