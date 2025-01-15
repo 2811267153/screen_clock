@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Color
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -20,11 +21,12 @@ import android.view.animation.AlphaAnimation
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.Animation
+import androidx.core.view.WindowCompat
 
 
 class ContainerActivity : AppCompatActivity() {
     private lateinit var carouselFragment: Fragment
-    private lateinit var weatherFragment: Fragment
+    private lateinit var containerFragment: Fragment
     private lateinit var notificationFragment:  Fragment
 
     // 状态变量
@@ -54,37 +56,36 @@ class ContainerActivity : AppCompatActivity() {
         }
     }
 
-
-
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 强制显示 Fragment
-        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        Log.d("FragmentDebug", "CarouselFragment found: $fragment")
-
         // 设置窗口标志，允许在锁屏界面上显示
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-        } else {
-            window.addFlags(
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-            )
-        }
+        // 设置全屏和沉浸式模式
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
 
-        // 启用全屏模式，包含状态栏和导航栏
+        // 隐藏导航栏和状态栏
+        @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = (
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                         or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 )
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
-        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+
+        // 确保导航栏完全透明
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.navigationBarDividerColor = Color.TRANSPARENT
+        }
+        window.navigationBarColor = Color.TRANSPARENT
+
+        // 设置布局延伸到导航栏下方
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContentView(R.layout.activity_container)
 
@@ -106,10 +107,6 @@ class ContainerActivity : AppCompatActivity() {
             notificationFragment = supportFragmentManager.findFragmentByTag("notification")
                 ?: NotificationActivity()
         }
-
-        // 添加日志
-        Log.d("FragmentDebug", "CarouselFragment: $carouselFragment")
-        Log.d("FragmentDebug", "notificationFragment: $notificationFragment")
 
         // 注册屏幕状态广播接收器
         val filter = IntentFilter().apply {
@@ -135,38 +132,6 @@ class ContainerActivity : AppCompatActivity() {
             e.printStackTrace()
         }
     }
-
-    /**
-     * 启用锁屏功能
-     */
-    private fun enableLockScreen() {
-        isLockScreenActive = true
-        
-        // 创建意图过滤器
-        val filter = IntentFilter().apply {
-            addAction(Intent.ACTION_SCREEN_OFF)
-        }
-        
-        // 尝试取消旧的注册
-        try {
-            unregisterReceiver(screenReceiver)
-        } catch (e: Exception) {
-            // 忽略未注册的异常
-        }
-        
-        // 注册新的广播接收器
-        registerReceiver(screenReceiver, filter)
-        println("Lock screen enabled")
-    }
-
-    /**
-     * 禁用锁屏功能
-     */
-    private fun disableLockScreen() {
-        isLockScreenActive = false
-        finish()  // 关闭当前活动
-    }
-
     /**
      * 显示轮播图页面
      */
@@ -177,48 +142,8 @@ class ContainerActivity : AppCompatActivity() {
                 android.R.anim.fade_in,
                 android.R.anim.fade_out
             )
-            .show(carouselFragment)
-            .hide(weatherFragment)
+            .show(containerFragment)
             .commitNow()
-    }
-    private fun showNotificationActivity() {
-        Log.d("FragmentDebug", "Showing notificationFragment fragment")
-        supportFragmentManager.beginTransaction()
-            .setCustomAnimations(
-                android.R.anim.fade_in,
-                android.R.anim.fade_out
-            )
-            .show(notificationFragment)
-            .hide(carouselFragment)
-            .commitNow()
-    }
-
-    /**
-     * 显示天气页面
-     */
-    private fun showWeather() {
-        Log.d("FragmentDebug", "Showing weather fragment")
-        supportFragmentManager.beginTransaction()
-            .setCustomAnimations(
-                android.R.anim.fade_in,
-                android.R.anim.fade_out
-            )
-            .hide(carouselFragment)
-            .show(weatherFragment)
-            .commitNow()
-        
-        // 强制更新天气数据
-//        (weatherFragment as? WeatherActivity)?.updateWeatherData()
-    }
-
-    fun updateWeatherData(temperature: String, condition: String, humidity: String) {
-        (weatherFragment as? WeatherActivity)?.let { fragment ->
-            fragment.view?.let { view ->
-                view.findViewById<TextView>(R.id.temperature)?.text = temperature
-                view.findViewById<TextView>(R.id.weather_condition)?.text = condition
-                view.findViewById<TextView>(R.id.humidity)?.text = "湿度: $humidity"
-            }
-        }
     }
 
     private fun createFadeInAnimation(): Animation {
@@ -236,13 +161,10 @@ class ContainerActivity : AppCompatActivity() {
     }
 
     fun handleNotification(show: Boolean) {
-        Log.d("NotificationDebug", "handleNotification called with show: $show")
+
         runOnUiThread {
+
             try {
-                Log.d("NotificationDebug", "Current fragments state:")
-                Log.d("NotificationDebug", "notificationFragment exists: ${notificationFragment != null}")
-                Log.d("NotificationDebug", "carouselFragment exists: ${carouselFragment != null}")
-                
                 if (show) {
                     // 显示通知，隐藏轮播图
                     notificationFragment.view?.startAnimation(createFadeInAnimation())
@@ -263,16 +185,12 @@ class ContainerActivity : AppCompatActivity() {
                         .commitNow()
                 }
                 
-                Log.d("NotificationDebug", "After transaction - notificationFragment isVisible: ${notificationFragment.isVisible}")
-                Log.d("NotificationDebug", "Fragment view exists: ${notificationFragment.view != null}")
-
                 if (show) {
                     // 延长显示时间到 6 秒
                     handler.removeCallbacks(hideNotificationRunnable)
                     handler.postDelayed(hideNotificationRunnable, 6000)
                 }
             } catch (e: Exception) {
-                Log.e("NotificationDebug", "Error handling notification visibility", e)
                 e.printStackTrace()
             }
         }

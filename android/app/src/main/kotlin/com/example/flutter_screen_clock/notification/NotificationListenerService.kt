@@ -63,11 +63,6 @@ class NotificationListenerService : NotificationListenerService() {
         } ?: Log.e("NotificationDebug", "NotificationActivity is null")
     }
 
-//    override fun onNotificationRemoved(sbn: StatusBarNotification) {
-//        Log.d(TAG, "Notification Removed: ${sbn.packageName}")
-//        notificationActivity?.onNotificationRemoved(sbn)
-//    }
-
     override fun onListenerConnected() {
         super.onListenerConnected()
         Log.d("NotificationDebug", "NotificationListenerService connected")

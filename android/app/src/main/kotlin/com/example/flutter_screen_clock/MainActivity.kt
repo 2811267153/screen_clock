@@ -116,11 +116,6 @@ class MainActivity: FlutterActivity() {
                         }, 1000)  // 1秒后重置状态
                     }
                 }
-//                "openCarouselActivity" -> {
-//                    val intent = Intent(this, CarouselContainerActivity::class.java)
-//                    startActivity(intent)
-//                    result.success(null)
-//                }
                 "openContainer" -> {
                     val intent = Intent(this, ContainerActivity::class.java)
                     startActivity(intent)
@@ -141,15 +136,6 @@ class MainActivity: FlutterActivity() {
                         result.error("SWITCH_ERROR", e.message, null)
                     }
                 }
-//                "openContainer" -> {
-//                    try {
-//                        val intent = Intent(this, CarouselContainerActivity::class.java)
-//                        startActivity(intent)
-//                        result.success(null)
-//                    } catch (e: Exception) {
-//                        result.error("NAVIGATION_ERROR", e.message, null)
-//                    }
-//                }
                 "openContainer" -> {
                     val intent = Intent(this, ContainerActivity::class.java)
                     startActivity(intent)
@@ -213,57 +199,9 @@ class MainActivity: FlutterActivity() {
         println("Lock screen enabled")
     }
 
-    /**
-     * 禁用锁屏功能
-     * 恢复窗口属性和系统UI显示
-     */
-    private fun disableLockScreen() {
-        isLockScreenActive = false
-        
-        runOnUiThread {
-            // 恢复 Android 8.1 及以上版本的设置
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                setShowWhenLocked(false)
-                setTurnScreenOn(false)
-            }
-
-            // 清除窗口标志
-            window.clearFlags(
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-            )
-
-            // 恢复系统UI显示
-            WindowCompat.setDecorFitsSystemWindows(window, true)
-            WindowInsetsControllerCompat(window, window.decorView).apply {
-                show(WindowInsetsCompat.Type.systemBars())
-            }
-        }
-
-        println("Lock screen disabled")
-    }
-
-    /**
-     * 更新主开关状态
-     * 当关闭主开关时，同时禁用锁屏
-     */
-    private fun updateMasterSwitch(isOn: Boolean) {
-        isMasterSwitchOn = isOn
-        if (!isOn && isLockScreenActive) {
-            disableLockScreen()
-        }
-    }
-
-    private fun openCarousel() {
-        val intent = Intent(this, CarouselContainerActivity::class.java)
-        startActivity(intent)
-    }
-
     @RequiresApi(Build.VERSION_CODES.M)
     private fun showCarouselOnLockScreen() {
-        val intent = Intent(this, CarouselContainerActivity::class.java).apply {
+        val intent = Intent(this, ContainerActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK
                 or Intent.FLAG_ACTIVITY_CLEAR_TOP
